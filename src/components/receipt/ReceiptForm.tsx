@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Minus, Download, Eye, Palette } from 'lucide-react';
+import { Plus, Minus, Download, Eye, Palette, ChevronDown, ChevronUp } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { currencies } from '@/lib/currencies';
 import { ReceiptPreview } from './ReceiptPreview';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
@@ -71,14 +72,21 @@ const ReceiptForm = () => {
     amountPaid: 0,
     notes: '',
     watermark: {
-      color: '#e5e7eb',
-      opacity: 10,
-      density: 5
+      color: '#9ca3af',
+      opacity: 20,
+      density: 30
     }
   });
 
   const [colorScheme, setColorScheme] = useState('blue');
   const [darkMode, setDarkMode] = useState(false);
+  
+  // Collapsible section states
+  const [businessOpen, setBusinessOpen] = useState(true);
+  const [clientOpen, setClientOpen] = useState(true);
+  const [receiptDetailsOpen, setReceiptDetailsOpen] = useState(true);
+  const [itemsOpen, setItemsOpen] = useState(true);
+  const [notesOpen, setNotesOpen] = useState(false);
 
   const colorSchemes = [
     { id: 'blue', name: 'Ocean Blue', primary: '#1e40af', secondary: '#3b82f6' },
@@ -92,13 +100,13 @@ const ReceiptForm = () => {
 
   const watermarkColors = [
     { name: 'Light Gray', value: '#e5e7eb' },
-    { name: 'Blue Gray', value: '#cbd5e1' },
-    { name: 'Rose', value: '#fda4af' },
-    { name: 'Amber', value: '#fcd34d' },
-    { name: 'Emerald', value: '#6ee7b7' },
-    { name: 'Violet', value: '#c4b5fd' },
-    { name: 'Cyan', value: '#67e8f9' },
-    { name: 'Pink', value: '#f9a8d4' }
+    { name: 'Blue Gray', value: '#64748b' },
+    { name: 'Rose', value: '#f43f5e' },
+    { name: 'Amber', value: '#f59e0b' },
+    { name: 'Emerald', value: '#10b981' },
+    { name: 'Violet', value: '#8b5cf6' },
+    { name: 'Cyan', value: '#06b6d4' },
+    { name: 'Pink', value: '#ec4899' }
   ];
 
   const paymentMethods = [
@@ -177,7 +185,7 @@ const ReceiptForm = () => {
       clientEmail: receiptData.clientEmail,
       invoiceNumber: receiptData.receiptNumber,
       invoiceDate: receiptData.receiptDate,
-      dueDate: receiptData.receiptDate, // For receipts, due date same as receipt date
+      dueDate: receiptData.receiptDate,
       paymentDate: receiptData.paymentDate,
       paymentMethod: receiptData.paymentMethod,
       currency: receiptData.currency,
@@ -190,7 +198,7 @@ const ReceiptForm = () => {
         discount: item.discount
       })) as InvoiceItem[],
       notes: receiptData.notes,
-      terms: '', // Receipts typically don't have terms
+      terms: '',
       amountPaid: receiptData.amountPaid,
       colorScheme: colorScheme,
       darkMode: darkMode,
@@ -227,394 +235,446 @@ const ReceiptForm = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Business Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Business Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="businessName">Business Name</Label>
-              <Input
-                id="businessName"
-                value={receiptData.businessName}
-                onChange={(e) => setReceiptData(prev => ({ ...prev, businessName: e.target.value }))}
-                placeholder="Your Business Name"
-              />
-            </div>
-            <div>
-              <Label htmlFor="businessLogo">Business Logo</Label>
-              <Input
-                id="businessLogo"
-                type="file"
-                accept="image/*"
-                onChange={handleLogoUpload}
-              />
-            </div>
-            <div>
-              <Label htmlFor="businessAddress">Address</Label>
-              <Textarea
-                id="businessAddress"
-                value={receiptData.businessAddress}
-                onChange={(e) => setReceiptData(prev => ({ ...prev, businessAddress: e.target.value }))}
-                placeholder="Business Address"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="businessPhone">Phone</Label>
-              <Input
-                id="businessPhone"
-                value={receiptData.businessPhone}
-                onChange={(e) => setReceiptData(prev => ({ ...prev, businessPhone: e.target.value }))}
-                placeholder="Phone Number"
-              />
-            </div>
-            <div>
-              <Label htmlFor="businessEmail">Email</Label>
-              <Input
-                id="businessEmail"
-                type="email"
-                value={receiptData.businessEmail}
-                onChange={(e) => setReceiptData(prev => ({ ...prev, businessEmail: e.target.value }))}
-                placeholder="Email Address"
-              />
-            </div>
-            <div>
-              <Label htmlFor="businessWebsite">Website</Label>
-              <Input
-                id="businessWebsite"
-                value={receiptData.businessWebsite}
-                onChange={(e) => setReceiptData(prev => ({ ...prev, businessWebsite: e.target.value }))}
-                placeholder="Website URL"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Client Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Client Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="clientName">Client Name</Label>
-              <Input
-                id="clientName"
-                value={receiptData.clientName}
-                onChange={(e) => setReceiptData(prev => ({ ...prev, clientName: e.target.value }))}
-                placeholder="Client Name"
-              />
-            </div>
-            <div>
-              <Label htmlFor="clientAddress">Address</Label>
-              <Textarea
-                id="clientAddress"
-                value={receiptData.clientAddress}
-                onChange={(e) => setReceiptData(prev => ({ ...prev, clientAddress: e.target.value }))}
-                placeholder="Client Address"
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="clientPhone">Phone</Label>
-              <Input
-                id="clientPhone"
-                value={receiptData.clientPhone}
-                onChange={(e) => setReceiptData(prev => ({ ...prev, clientPhone: e.target.value }))}
-                placeholder="Phone Number"
-              />
-            </div>
-            <div>
-              <Label htmlFor="clientEmail">Email</Label>
-              <Input
-                id="clientEmail"
-                type="email"
-                value={receiptData.clientEmail}
-                onChange={(e) => setReceiptData(prev => ({ ...prev, clientEmail: e.target.value }))}
-                placeholder="Email Address"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Receipt Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Receipt Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="receiptNumber">Receipt Number</Label>
-              <Input
-                id="receiptNumber"
-                value={receiptData.receiptNumber}
-                onChange={(e) => setReceiptData(prev => ({ ...prev, receiptNumber: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="receiptDate">Receipt Date</Label>
-              <Input
-                id="receiptDate"
-                type="date"
-                value={receiptData.receiptDate}
-                onChange={(e) => setReceiptData(prev => ({ ...prev, receiptDate: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="paymentDate">Payment Date</Label>
-              <Input
-                id="paymentDate"
-                type="date"
-                value={receiptData.paymentDate}
-                onChange={(e) => setReceiptData(prev => ({ ...prev, paymentDate: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="paymentMethod">Payment Method</Label>
-              <Select value={receiptData.paymentMethod} onValueChange={(value) => setReceiptData(prev => ({ ...prev, paymentMethod: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {paymentMethods.map((method) => (
-                    <SelectItem key={method} value={method}>
-                      {method}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="currency">Currency</Label>
-              <Select value={receiptData.currency} onValueChange={(value) => setReceiptData(prev => ({ ...prev, currency: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {currencies.map((currency) => (
-                    <SelectItem key={currency.code} value={currency.code}>
-                      {currency.code} - {currency.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="amountPaid">Amount Paid</Label>
-              <Input
-                id="amountPaid"
-                type="number"
-                value={receiptData.amountPaid}
-                onChange={(e) => setReceiptData(prev => ({ ...prev, amountPaid: Number(e.target.value) }))}
-                min="0"
-                step="0.01"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Appearance Settings */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Palette className="h-5 w-5" />
-              Appearance Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="colorScheme">Color Scheme</Label>
-              <Select value={colorScheme} onValueChange={setColorScheme}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {colorSchemes.map((scheme) => (
-                    <SelectItem key={scheme.id} value={scheme.id}>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-4 h-4 rounded-full" 
-                          style={{ backgroundColor: scheme.primary }}
+        {/* Left Column - Form Controls */}
+        <div className="space-y-6">
+          {/* Document Customization - Moved to top */}
+          <div className="grid grid-cols-1 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5" />
+                  Document Customization
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <Label htmlFor="colorScheme">Color Scheme</Label>
+                  <div className="grid grid-cols-7 gap-2 mt-2">
+                    {colorSchemes.map((scheme) => (
+                      <button
+                        key={scheme.id}
+                        className={`relative h-12 rounded-md border-2 transition-all ${
+                          colorScheme === scheme.id 
+                            ? 'border-gray-900 dark:border-white scale-110' 
+                            : 'border-gray-300 hover:scale-105'
+                        }`}
+                        style={{ 
+                          background: `linear-gradient(135deg, ${scheme.primary} 0%, ${scheme.secondary} 100%)` 
+                        }}
+                        onClick={() => setColorScheme(scheme.id)}
+                        title={scheme.name}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Selected: {colorSchemes.find(s => s.id === colorScheme)?.name}
+                  </p>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="darkMode">Dark Mode</Label>
+                  <Switch
+                    id="darkMode"
+                    checked={darkMode}
+                    onCheckedChange={setDarkMode}
+                  />
+                </div>
+
+                {/* Watermark Settings */}
+                <div className="space-y-4">
+                  <h4 className="font-medium">Watermark Settings</h4>
+                  
+                  <div>
+                    <Label htmlFor="watermarkColor">Watermark Color</Label>
+                    <div className="grid grid-cols-4 gap-2 mt-2">
+                      {watermarkColors.map((color) => (
+                        <button
+                          key={color.value}
+                          className={`w-full h-10 rounded-md border-2 transition-all ${
+                            receiptData.watermark.color === color.value 
+                              ? 'border-gray-900 dark:border-white scale-110' 
+                              : 'border-gray-300 hover:scale-105'
+                          }`}
+                          style={{ backgroundColor: color.value }}
+                          onClick={() => updateWatermark('color', color.value)}
+                          title={color.name}
                         />
-                        {scheme.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="darkMode">Dark Mode</Label>
-              <Switch
-                id="darkMode"
-                checked={darkMode}
-                onCheckedChange={setDarkMode}
-              />
-            </div>
-          </CardContent>
-        </Card>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <Label>Opacity: {receiptData.watermark.opacity}%</Label>
+                    </div>
+                    <Slider
+                      value={[receiptData.watermark.opacity]}
+                      onValueChange={(value) => updateWatermark('opacity', value[0])}
+                      min={5}
+                      max={60}
+                      step={5}
+                      className="w-full"
+                    />
+                  </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Watermark Settings</CardTitle>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Customize the business name watermark that appears on receipts
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <Label htmlFor="watermarkColor">Watermark Color</Label>
-              <div className="grid grid-cols-4 gap-2 mt-2">
-                {watermarkColors.map((color) => (
-                  <button
-                    key={color.value}
-                    className={`w-full h-10 rounded-md border-2 transition-all ${
-                      receiptData.watermark.color === color.value 
-                        ? 'border-gray-900 dark:border-white scale-110' 
-                        : 'border-gray-300 hover:scale-105'
-                    }`}
-                    style={{ backgroundColor: color.value }}
-                    onClick={() => updateWatermark('color', color.value)}
-                    title={color.name}
-                  />
-                ))}
-              </div>
-            </div>
-            
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <Label>Opacity: {receiptData.watermark.opacity}%</Label>
-              </div>
-              <Slider
-                value={[receiptData.watermark.opacity]}
-                onValueChange={(value) => updateWatermark('opacity', value[0])}
-                min={5}
-                max={50}
-                step={5}
-                className="w-full"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Controls how transparent the watermark appears
-              </p>
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <Label>Density: {receiptData.watermark.density}</Label>
-              </div>
-              <Slider
-                value={[receiptData.watermark.density]}
-                onValueChange={(value) => updateWatermark('density', value[0])}
-                min={1}
-                max={10}
-                step={1}
-                className="w-full"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Controls how many watermark instances appear across the background
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Items Section */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Items</CardTitle>
-          <Button onClick={addItem} size="sm" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Item
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {receiptData.items.map((item, index) => (
-              <div key={item.id} className="grid grid-cols-1 md:grid-cols-7 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="md:col-span-2">
-                  <Label>Description</Label>
-                  <Input
-                    value={item.description}
-                    onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                    placeholder="Item description"
-                  />
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <Label>Density: {receiptData.watermark.density}%</Label>
+                    </div>
+                    <Slider
+                      value={[receiptData.watermark.density]}
+                      onValueChange={(value) => updateWatermark('density', value[0])}
+                      min={10}
+                      max={80}
+                      step={5}
+                      className="w-full"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label>Quantity</Label>
-                  <Input
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) => updateItem(item.id, 'quantity', Number(e.target.value))}
-                    min="0"
-                  />
-                </div>
-                <div>
-                  <Label>Unit Price</Label>
-                  <Input
-                    type="number"
-                    value={item.unitPrice}
-                    onChange={(e) => updateItem(item.id, 'unitPrice', Number(e.target.value))}
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <Label>Tax Rate (%)</Label>
-                  <Input
-                    type="number"
-                    value={item.taxRate}
-                    onChange={(e) => updateItem(item.id, 'taxRate', Number(e.target.value))}
-                    min="0"
-                    max="100"
-                    step="0.01"
-                  />
-                </div>
-                <div>
-                  <Label>Discount (%)</Label>
-                  <Input
-                    type="number"
-                    value={item.discount}
-                    onChange={(e) => updateItem(item.id, 'discount', Number(e.target.value))}
-                    min="0"
-                    max="100"
-                    step="0.01"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => removeItem(item.id)}
-                    disabled={receiptData.items.length === 1}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Additional Notes */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Additional Notes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={receiptData.notes}
-            onChange={(e) => setReceiptData(prev => ({ ...prev, notes: e.target.value }))}
-            placeholder="Additional notes or comments"
-            rows={4}
+          {/* Business Information - Collapsible */}
+          <Collapsible open={businessOpen} onOpenChange={setBusinessOpen}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <CardTitle className="flex items-center justify-between">
+                    Business Information
+                    {businessOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="businessName">Business Name</Label>
+                    <Input
+                      id="businessName"
+                      value={receiptData.businessName}
+                      onChange={(e) => setReceiptData(prev => ({ ...prev, businessName: e.target.value }))}
+                      placeholder="Your Business Name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="businessLogo">Business Logo</Label>
+                    <Input
+                      id="businessLogo"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="businessAddress">Address</Label>
+                    <Textarea
+                      id="businessAddress"
+                      value={receiptData.businessAddress}
+                      onChange={(e) => setReceiptData(prev => ({ ...prev, businessAddress: e.target.value }))}
+                      placeholder="Business Address"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="businessPhone">Phone</Label>
+                    <Input
+                      id="businessPhone"
+                      value={receiptData.businessPhone}
+                      onChange={(e) => setReceiptData(prev => ({ ...prev, businessPhone: e.target.value }))}
+                      placeholder="Phone Number"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="businessEmail">Email</Label>
+                    <Input
+                      id="businessEmail"
+                      type="email"
+                      value={receiptData.businessEmail}
+                      onChange={(e) => setReceiptData(prev => ({ ...prev, businessEmail: e.target.value }))}
+                      placeholder="Email Address"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="businessWebsite">Website</Label>
+                    <Input
+                      id="businessWebsite"
+                      value={receiptData.businessWebsite}
+                      onChange={(e) => setReceiptData(prev => ({ ...prev, businessWebsite: e.target.value }))}
+                      placeholder="Website URL"
+                    />
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Client Information - Collapsible */}
+          <Collapsible open={clientOpen} onOpenChange={setClientOpen}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <CardTitle className="flex items-center justify-between">
+                    Client Information
+                    {clientOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="clientName">Client Name</Label>
+                    <Input
+                      id="clientName"
+                      value={receiptData.clientName}
+                      onChange={(e) => setReceiptData(prev => ({ ...prev, clientName: e.target.value }))}
+                      placeholder="Client Name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="clientAddress">Address</Label>
+                    <Textarea
+                      id="clientAddress"
+                      value={receiptData.clientAddress}
+                      onChange={(e) => setReceiptData(prev => ({ ...prev, clientAddress: e.target.value }))}
+                      placeholder="Client Address"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="clientPhone">Phone</Label>
+                    <Input
+                      id="clientPhone"
+                      value={receiptData.clientPhone}
+                      onChange={(e) => setReceiptData(prev => ({ ...prev, clientPhone: e.target.value }))}
+                      placeholder="Phone Number"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="clientEmail">Email</Label>
+                    <Input
+                      id="clientEmail"
+                      type="email"
+                      value={receiptData.clientEmail}
+                      onChange={(e) => setReceiptData(prev => ({ ...prev, clientEmail: e.target.value }))}
+                      placeholder="Email Address"
+                    />
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Receipt Details - Collapsible */}
+          <Collapsible open={receiptDetailsOpen} onOpenChange={setReceiptDetailsOpen}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <CardTitle className="flex items-center justify-between">
+                    Receipt Details
+                    {receiptDetailsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="receiptNumber">Receipt Number</Label>
+                    <Input
+                      id="receiptNumber"
+                      value={receiptData.receiptNumber}
+                      onChange={(e) => setReceiptData(prev => ({ ...prev, receiptNumber: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="receiptDate">Receipt Date</Label>
+                    <Input
+                      id="receiptDate"
+                      type="date"
+                      value={receiptData.receiptDate}
+                      onChange={(e) => setReceiptData(prev => ({ ...prev, receiptDate: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="paymentDate">Payment Date</Label>
+                    <Input
+                      id="paymentDate"
+                      type="date"
+                      value={receiptData.paymentDate}
+                      onChange={(e) => setReceiptData(prev => ({ ...prev, paymentDate: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="paymentMethod">Payment Method</Label>
+                    <Select value={receiptData.paymentMethod} onValueChange={(value) => setReceiptData(prev => ({ ...prev, paymentMethod: value }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paymentMethods.map((method) => (
+                          <SelectItem key={method} value={method}>
+                            {method}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="currency">Currency</Label>
+                    <Select value={receiptData.currency} onValueChange={(value) => setReceiptData(prev => ({ ...prev, currency: value }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currencies.map((currency) => (
+                          <SelectItem key={currency.code} value={currency.code}>
+                            {currency.code} - {currency.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="amountPaid">Amount Paid</Label>
+                    <Input
+                      id="amountPaid"
+                      type="number"
+                      value={receiptData.amountPaid}
+                      onChange={(e) => setReceiptData(prev => ({ ...prev, amountPaid: Number(e.target.value) }))}
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Items Section - Collapsible */}
+          <Collapsible open={itemsOpen} onOpenChange={setItemsOpen}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <CardTitle className="flex items-center justify-between">
+                    Items
+                    {itemsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent>
+                  <div className="space-y-4">
+                    <Button onClick={addItem} size="sm" className="gap-2 mb-4">
+                      <Plus className="h-4 w-4" />
+                      Add Item
+                    </Button>
+                    {receiptData.items.map((item, index) => (
+                      <div key={item.id} className="grid grid-cols-1 md:grid-cols-7 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="md:col-span-2">
+                          <Label>Description</Label>
+                          <Input
+                            value={item.description}
+                            onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                            placeholder="Item description"
+                          />
+                        </div>
+                        <div>
+                          <Label>Quantity</Label>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => updateItem(item.id, 'quantity', Number(e.target.value))}
+                            min="0"
+                          />
+                        </div>
+                        <div>
+                          <Label>Unit Price</Label>
+                          <Input
+                            type="number"
+                            value={item.unitPrice}
+                            onChange={(e) => updateItem(item.id, 'unitPrice', Number(e.target.value))}
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                        <div>
+                          <Label>Tax Rate (%)</Label>
+                          <Input
+                            type="number"
+                            value={item.taxRate}
+                            onChange={(e) => updateItem(item.id, 'taxRate', Number(e.target.value))}
+                            min="0"
+                            max="100"
+                            step="0.01"
+                          />
+                        </div>
+                        <div>
+                          <Label>Discount (%)</Label>
+                          <Input
+                            type="number"
+                            value={item.discount}
+                            onChange={(e) => updateItem(item.id, 'discount', Number(e.target.value))}
+                            min="0"
+                            max="100"
+                            step="0.01"
+                          />
+                        </div>
+                        <div className="flex items-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeItem(item.id)}
+                            disabled={receiptData.items.length === 1}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Additional Notes - Collapsible */}
+          <Collapsible open={notesOpen} onOpenChange={setNotesOpen}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <CardTitle className="flex items-center justify-between">
+                    Additional Notes
+                    {notesOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent>
+                  <Textarea
+                    value={receiptData.notes}
+                    onChange={(e) => setReceiptData(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Additional notes or comments"
+                    rows={4}
+                  />
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+        </div>
+
+        {/* Right Column - Preview */}
+        <div className="lg:sticky lg:top-6">
+          <ReceiptPreview 
+            data={convertToInvoiceData()} 
+            colorScheme={colorScheme} 
+            darkMode={darkMode}
+            watermarkColor={receiptData.watermark.color}
+            watermarkOpacity={receiptData.watermark.opacity}
+            watermarkDensity={receiptData.watermark.density}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

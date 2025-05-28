@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { getCurrencySymbol } from '@/lib/currencies';
 import { InvoiceData } from '@/types/invoice';
@@ -21,9 +20,9 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
   watermarkDensity = 30
 }) => {
   const colorSchemes = {
-    blue: { primary: '#1e40af', secondary: '#3b82f6', light: '#dbeafe' },
-    purple: { primary: '#7c3aed', secondary: '#a855f7', light: '#e9d5ff' },
-    green: { primary: '#059669', secondary: '#10b981', light: '#d1fae5' },
+    blue: { primary: '#2563eb', secondary: '#3b82f6', light: '#dbeafe' },
+    purple: { primary: '#9333ea', secondary: '#a855f7', light: '#e9d5ff' },
+    green: { primary: '#16a34a', secondary: '#22c55e', light: '#d1fae5' },
     red: { primary: '#dc2626', secondary: '#ef4444', light: '#fee2e2' },
     orange: { primary: '#ea580c', secondary: '#f97316', light: '#fed7aa' },
     teal: { primary: '#0d9488', secondary: '#14b8a6', light: '#ccfbf1' },
@@ -75,7 +74,38 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
     
     const rgbColor = hexToRgb(watermarkColor);
     const opacity = watermarkOpacity / 100;
-    const density = Math.max(10, watermarkDensity);
+    
+    // Create randomized watermark pattern
+    const generateRandomPattern = () => {
+      const patterns = [];
+      const instanceCount = Math.floor((watermarkDensity || 30) / 10);
+      
+      for (let i = 0; i < instanceCount; i++) {
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        const rotation = Math.random() * 60 - 30; // Random rotation between -30 and 30 degrees
+        const scale = 0.8 + Math.random() * 0.4; // Random scale between 0.8 and 1.2
+        
+        patterns.push(`
+          <div style="
+            position: absolute;
+            left: ${x}%;
+            top: ${y}%;
+            transform: rotate(${rotation}deg) scale(${scale});
+            color: rgba(${rgbColor}, ${opacity});
+            font-size: 24px;
+            font-weight: bold;
+            white-space: nowrap;
+            pointer-events: none;
+            user-select: none;
+          ">
+            ${data.businessName}
+          </div>
+        `);
+      }
+      
+      return patterns.join('');
+    };
     
     return {
       position: 'absolute' as const,
@@ -85,27 +115,52 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
       height: '100%',
       pointerEvents: 'none' as const,
       zIndex: 1,
-      backgroundImage: `repeating-linear-gradient(
-        45deg,
-        rgba(${rgbColor}, ${opacity}) 0px,
-        rgba(${rgbColor}, ${opacity}) ${Math.max(15, 80 - density)}px,
-        transparent ${Math.max(15, 80 - density)}px,
-        transparent ${Math.max(30, 160 - density * 2)}px
-      )`,
-      fontSize: '20px',
-      fontWeight: 'bold',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      transform: 'rotate(-45deg)',
       overflow: 'hidden',
     };
+  };
+
+  const renderWatermark = () => {
+    if (!data.businessName) return null;
+    
+    const rgbColor = hexToRgb(watermarkColor);
+    const opacity = watermarkOpacity / 100;
+    const instanceCount = Math.floor((watermarkDensity || 30) / 8);
+    
+    const watermarkInstances = [];
+    for (let i = 0; i < instanceCount; i++) {
+      const x = Math.random() * 90 + 5; // 5% to 95% to keep within bounds
+      const y = Math.random() * 90 + 5;
+      const rotation = Math.random() * 60 - 30;
+      const scale = 0.7 + Math.random() * 0.6;
+      
+      watermarkInstances.push(
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            left: `${x}%`,
+            top: `${y}%`,
+            transform: `rotate(${rotation}deg) scale(${scale})`,
+            color: `rgba(${rgbColor}, ${opacity})`,
+            fontSize: '20px',
+            fontWeight: 'bold',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}
+        >
+          {data.businessName}
+        </div>
+      );
+    }
+    
+    return watermarkInstances;
   };
 
   return (
     <div className="relative">
       <div 
-        className={`max-w-4xl mx-auto p-8 shadow-lg relative overflow-hidden ${
+        className={`max-w-4xl mx-auto p-8 shadow-2xl relative overflow-hidden ${
           darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'
         }`} 
         style={{ fontFamily: 'system-ui', minHeight: '600px' }}
@@ -113,7 +168,7 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
         {/* Watermark */}
         {data.businessName && (
           <div style={getWatermarkStyle()}>
-            {Array(Math.ceil(watermarkDensity / 10)).fill(data.businessName).join(' • ')}
+            {renderWatermark()}
           </div>
         )}
 
@@ -126,19 +181,19 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
                 <img src={data.businessLogo} alt="Business Logo" className="h-16 w-16 object-contain" />
               )}
               <div>
-                <h1 className="text-2xl font-bold" style={{ color: colors.primary }}>
+                <h1 className="text-3xl font-bold" style={{ color: colors.primary }}>
                   {data.businessName}
                 </h1>
-                <div className="text-sm mt-1" style={{ color: darkMode ? '#d1d5db' : '#6b7280' }}>
-                  {data.businessPhone && <div>Phone: {data.businessPhone}</div>}
-                  {data.businessEmail && <div>Email: {data.businessEmail}</div>}
-                  {data.businessWebsite && <div>Web: {data.businessWebsite}</div>}
+                <div className="text-sm mt-2" style={{ color: darkMode ? '#d1d5db' : '#6b7280' }}>
+                  {data.businessPhone && <div className="font-medium">Phone: {data.businessPhone}</div>}
+                  {data.businessEmail && <div className="font-medium">Email: {data.businessEmail}</div>}
+                  {data.businessWebsite && <div className="font-medium">Web: {data.businessWebsite}</div>}
                 </div>
               </div>
             </div>
             <div className="text-right">
-              <h2 className="text-3xl font-bold mb-2" style={{ color: colors.primary }}>RECEIPT</h2>
-              <div className="text-sm space-y-1">
+              <h2 className="text-4xl font-bold mb-3" style={{ color: colors.primary }}>RECEIPT</h2>
+              <div className="text-sm space-y-1 font-medium">
                 <div><strong>Receipt No:</strong> {data.invoiceNumber}</div>
                 <div><strong>Date:</strong> {data.invoiceDate}</div>
                 {data.paymentDate && <div><strong>Payment Date:</strong> {data.paymentDate}</div>}
@@ -150,18 +205,18 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
           {/* Addresses */}
           <div className="grid grid-cols-2 gap-8 mb-8">
             <div>
-              <h3 className="font-semibold mb-2" style={{ color: colors.primary }}>From:</h3>
+              <h3 className="font-bold mb-3 text-lg" style={{ color: colors.primary }}>From:</h3>
               <div className="text-sm">
-                <div className="font-medium">{data.businessName}</div>
-                <div className="whitespace-pre-line">{data.businessAddress}</div>
+                <div className="font-bold text-base">{data.businessName}</div>
+                <div className="whitespace-pre-line mt-1">{data.businessAddress}</div>
               </div>
             </div>
             <div>
-              <h3 className="font-semibold mb-2" style={{ color: colors.primary }}>To:</h3>
+              <h3 className="font-bold mb-3 text-lg" style={{ color: colors.primary }}>To:</h3>
               <div className="text-sm">
-                <div className="font-medium">{data.clientName}</div>
-                <div className="whitespace-pre-line">{data.clientAddress}</div>
-                {data.clientPhone && <div>Phone: {data.clientPhone}</div>}
+                <div className="font-bold text-base">{data.clientName}</div>
+                <div className="whitespace-pre-line mt-1">{data.clientAddress}</div>
+                {data.clientPhone && <div className="mt-1">Phone: {data.clientPhone}</div>}
                 {data.clientEmail && <div>Email: {data.clientEmail}</div>}
               </div>
             </div>
@@ -169,28 +224,34 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
 
           {/* Items Table */}
           <div className="mb-8">
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse shadow-lg">
               <thead>
-                <tr style={{ backgroundColor: darkMode ? colors.primary + '40' : colors.light }}>
-                  <th className="border border-gray-300 p-3 text-left">Description</th>
-                  <th className="border border-gray-300 p-3 text-center">Qty</th>
-                  <th className="border border-gray-300 p-3 text-right">Unit Price</th>
-                  <th className="border border-gray-300 p-3 text-right">Discount</th>
-                  <th className="border border-gray-300 p-3 text-right">Tax</th>
-                  <th className="border border-gray-300 p-3 text-right">Total</th>
+                <tr style={{ 
+                  backgroundColor: darkMode ? colors.primary + '50' : colors.primary,
+                  color: 'white'
+                }}>
+                  <th className="border border-gray-300 p-4 text-left font-bold">Description</th>
+                  <th className="border border-gray-300 p-4 text-center font-bold">Qty</th>
+                  <th className="border border-gray-300 p-4 text-right font-bold">Unit Price</th>
+                  <th className="border border-gray-300 p-4 text-right font-bold">Discount</th>
+                  <th className="border border-gray-300 p-4 text-right font-bold">Tax</th>
+                  <th className="border border-gray-300 p-4 text-right font-bold">Total</th>
                 </tr>
               </thead>
               <tbody>
-                {data.items.map((item) => (
-                  <tr key={item.id}>
-                    <td className="border border-gray-300 p-3">{item.description}</td>
-                    <td className="border border-gray-300 p-3 text-center">{item.quantity}</td>
-                    <td className="border border-gray-300 p-3 text-right">
+                {data.items.map((item, index) => (
+                  <tr key={item.id} className={index % 2 === 0 ? 
+                    (darkMode ? 'bg-gray-800' : 'bg-gray-50') : 
+                    (darkMode ? 'bg-gray-750' : 'bg-white')
+                  }>
+                    <td className="border border-gray-300 p-4 font-medium">{item.description}</td>
+                    <td className="border border-gray-300 p-4 text-center font-medium">{item.quantity}</td>
+                    <td className="border border-gray-300 p-4 text-right font-medium">
                       {currencySymbol}{item.unitPrice.toFixed(2)}
                     </td>
-                    <td className="border border-gray-300 p-3 text-right">{item.discount}%</td>
-                    <td className="border border-gray-300 p-3 text-right">{item.taxRate}%</td>
-                    <td className="border border-gray-300 p-3 text-right">
+                    <td className="border border-gray-300 p-4 text-right font-medium">{item.discount}%</td>
+                    <td className="border border-gray-300 p-4 text-right font-medium">{item.taxRate}%</td>
+                    <td className="border border-gray-300 p-4 text-right font-bold">
                       {currencySymbol}{calculateItemTotal(item).toFixed(2)}
                     </td>
                   </tr>
@@ -202,37 +263,37 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
           {/* Totals */}
           <div className="flex justify-end mb-8">
             <div className="w-80">
-              <div className="space-y-2 text-right">
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>{currencySymbol}{totals.subtotal.toFixed(2)}</span>
+              <div className="space-y-3 text-right bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div className="flex justify-between text-lg">
+                  <span className="font-medium">Subtotal:</span>
+                  <span className="font-bold">{currencySymbol}{totals.subtotal.toFixed(2)}</span>
                 </div>
                 {totals.totalDiscount > 0 && (
-                  <div className="flex justify-between">
-                    <span>Total Discount:</span>
-                    <span>-{currencySymbol}{totals.totalDiscount.toFixed(2)}</span>
+                  <div className="flex justify-between text-lg">
+                    <span className="font-medium">Total Discount:</span>
+                    <span className="font-bold text-red-600">-{currencySymbol}{totals.totalDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 {totals.totalTax > 0 && (
-                  <div className="flex justify-between">
-                    <span>Total Tax:</span>
-                    <span>{currencySymbol}{totals.totalTax.toFixed(2)}</span>
+                  <div className="flex justify-between text-lg">
+                    <span className="font-medium">Total Tax:</span>
+                    <span className="font-bold">{currencySymbol}{totals.totalTax.toFixed(2)}</span>
                   </div>
                 )}
-                <hr className="my-2" />
-                <div className="flex justify-between text-lg font-bold" style={{ color: colors.primary }}>
+                <hr className="my-3 border-2" style={{ borderColor: colors.primary }} />
+                <div className="flex justify-between text-2xl font-bold" style={{ color: colors.primary }}>
                   <span>TOTAL:</span>
                   <span>{currencySymbol}{totals.total.toFixed(2)}</span>
                 </div>
                 {data.amountPaid && (
                   <>
-                    <div className="flex justify-between">
-                      <span>Amount Paid:</span>
-                      <span>{currencySymbol}{data.amountPaid.toFixed(2)}</span>
+                    <div className="flex justify-between text-lg">
+                      <span className="font-medium">Amount Paid:</span>
+                      <span className="font-bold text-green-600">{currencySymbol}{data.amountPaid.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Balance:</span>
-                      <span>{currencySymbol}{(totals.total - data.amountPaid).toFixed(2)}</span>
+                    <div className="flex justify-between text-lg">
+                      <span className="font-medium">Balance:</span>
+                      <span className="font-bold">{currencySymbol}{(totals.total - data.amountPaid).toFixed(2)}</span>
                     </div>
                   </>
                 )}
@@ -240,21 +301,11 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
             </div>
           </div>
 
-          {/* Notes and Terms */}
-          {(data.notes || data.terms) && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {data.notes && (
-                <div>
-                  <h3 className="font-semibold mb-2" style={{ color: colors.primary }}>Notes:</h3>
-                  <p className="text-sm whitespace-pre-line">{data.notes}</p>
-                </div>
-              )}
-              {data.terms && (
-                <div>
-                  <h3 className="font-semibold mb-2" style={{ color: colors.primary }}>Terms & Conditions:</h3>
-                  <p className="text-sm whitespace-pre-line">{data.terms}</p>
-                </div>
-              )}
+          {/* Notes */}
+          {data.notes && (
+            <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+              <h3 className="font-bold mb-3 text-lg" style={{ color: colors.primary }}>Notes:</h3>
+              <p className="text-sm whitespace-pre-line leading-relaxed">{data.notes}</p>
             </div>
           )}
         </div>

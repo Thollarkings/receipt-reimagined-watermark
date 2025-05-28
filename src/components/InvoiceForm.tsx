@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { Plus, Trash2, FileText, Receipt, Upload, Download } from 'lucide-react';
+import { Plus, Trash2, FileText, Receipt, Upload, Download, ChevronDown, ChevronUp, Palette } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { InvoiceData, InvoiceItem } from '@/types/invoice';
 import { currencies } from '@/lib/currencies';
 import InvoicePreview from '@/components/invoice/InvoicePreview';
@@ -26,6 +26,13 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onExportPDF }) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  
+  // Collapsible section states
+  const [businessOpen, setBusinessOpen] = useState(true);
+  const [clientOpen, setClientOpen] = useState(true);
+  const [documentDetailsOpen, setDocumentDetailsOpen] = useState(true);
+  const [itemsOpen, setItemsOpen] = useState(true);
+  const [notesOpen, setNotesOpen] = useState(false);
   
   const [formData, setFormData] = useState<InvoiceData>({
     id: '',
@@ -56,6 +63,27 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onExportPDF }) => {
     watermarkOpacity: 20,
     watermarkDensity: 30,
   });
+
+  const colorSchemes = [
+    { id: 'blue', name: 'Ocean Blue', primary: '#2563eb', secondary: '#3b82f6' },
+    { id: 'purple', name: 'Royal Purple', primary: '#9333ea', secondary: '#a855f7' },
+    { id: 'green', name: 'Forest Green', primary: '#16a34a', secondary: '#22c55e' },
+    { id: 'red', name: 'Crimson Red', primary: '#dc2626', secondary: '#ef4444' },
+    { id: 'orange', name: 'Sunset Orange', primary: '#ea580c', secondary: '#f97316' },
+    { id: 'teal', name: 'Ocean Teal', primary: '#0d9488', secondary: '#14b8a6' },
+    { id: 'indigo', name: 'Deep Indigo', primary: '#4338ca', secondary: '#6366f1' }
+  ];
+
+  const watermarkColors = [
+    { name: 'Light Gray', value: '#9ca3af' },
+    { name: 'Blue Gray', value: '#64748b' },
+    { name: 'Rose', value: '#f43f5e' },
+    { name: 'Amber', value: '#f59e0b' },
+    { name: 'Emerald', value: '#10b981' },
+    { name: 'Violet', value: '#8b5cf6' },
+    { name: 'Cyan', value: '#06b6d4' },
+    { name: 'Pink', value: '#ec4899' }
+  ];
 
   // Load user profile
   useEffect(() => {
@@ -250,323 +278,37 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onExportPDF }) => {
           </CardContent>
         </Card>
 
-        {/* Business Information */}
+        {/* Document Customization - Moved to top */}
         <Card>
           <CardHeader>
-            <CardTitle>Business Information</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Palette className="h-5 w-5" />
+              Document Customization
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="businessName">Business Name</Label>
-              <Input
-                id="businessName"
-                value={formData.businessName}
-                onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
-                placeholder="Your Business Name"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="businessLogo">Business Logo</Label>
-              <div className="flex items-center gap-3">
-                <Input
-                  id="businessLogo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                  className="flex-1"
-                />
-                {formData.businessLogo && (
-                  <img src={formData.businessLogo} alt="Logo" className="h-12 w-12 object-contain border rounded" />
-                )}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="businessAddress">Business Address</Label>
-              <Textarea
-                id="businessAddress"
-                value={formData.businessAddress}
-                onChange={(e) => setFormData(prev => ({ ...prev, businessAddress: e.target.value }))}
-                placeholder="Business Address"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="businessPhone">Phone</Label>
-                <Input
-                  id="businessPhone"
-                  value={formData.businessPhone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, businessPhone: e.target.value }))}
-                  placeholder="Phone Number"
-                />
-              </div>
-              <div>
-                <Label htmlFor="businessEmail">Email</Label>
-                <Input
-                  id="businessEmail"
-                  type="email"
-                  value={formData.businessEmail}
-                  onChange={(e) => setFormData(prev => ({ ...prev, businessEmail: e.target.value }))}
-                  placeholder="business@example.com"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="businessWebsite">Website</Label>
-              <Input
-                id="businessWebsite"
-                value={formData.businessWebsite}
-                onChange={(e) => setFormData(prev => ({ ...prev, businessWebsite: e.target.value }))}
-                placeholder="https://yourwebsite.com"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Client Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Client Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="clientName">Client Name</Label>
-              <Input
-                id="clientName"
-                value={formData.clientName}
-                onChange={(e) => setFormData(prev => ({ ...prev, clientName: e.target.value }))}
-                placeholder="Client Name"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="clientAddress">Client Address</Label>
-              <Textarea
-                id="clientAddress"
-                value={formData.clientAddress}
-                onChange={(e) => setFormData(prev => ({ ...prev, clientAddress: e.target.value }))}
-                placeholder="Client Address"
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="clientPhone">Phone</Label>
-                <Input
-                  id="clientPhone"
-                  value={formData.clientPhone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, clientPhone: e.target.value }))}
-                  placeholder="Phone Number"
-                />
-              </div>
-              <div>
-                <Label htmlFor="clientEmail">Email</Label>
-                <Input
-                  id="clientEmail"
-                  type="email"
-                  value={formData.clientEmail}
-                  onChange={(e) => setFormData(prev => ({ ...prev, clientEmail: e.target.value }))}
-                  placeholder="client@example.com"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Document Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Document Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="invoiceNumber">
-                  {formData.type === 'invoice' ? 'Invoice' : 'Receipt'} Number
-                </Label>
-                <Input
-                  id="invoiceNumber"
-                  value={formData.invoiceNumber}
-                  onChange={(e) => setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))}
-                  placeholder="INV-001"
-                />
-              </div>
-              <div>
-                <Label htmlFor="invoiceDate">Invoice Date</Label>
-                <Input
-                  id="invoiceDate"
-                  type="date"
-                  value={formData.invoiceDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, invoiceDate: e.target.value }))}
-                />
-              </div>
-            </div>
-
-            {formData.type === 'invoice' && (
-              <div>
-                <Label htmlFor="dueDate">Due Date</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
-                />
-              </div>
-            )}
-
-            {formData.type === 'receipt' && (
-              <>
-                <div>
-                  <Label htmlFor="paymentDate">Payment Date</Label>
-                  <Input
-                    id="paymentDate"
-                    type="date"
-                    value={formData.paymentDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, paymentDate: e.target.value }))}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="paymentMethod">Payment Method</Label>
-                  <Input
-                    id="paymentMethod"
-                    value={formData.paymentMethod}
-                    onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
-                    placeholder="Credit Card, Cash, etc."
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="amountPaid">Amount Paid</Label>
-                  <Input
-                    id="amountPaid"
-                    type="number"
-                    value={formData.amountPaid}
-                    onChange={(e) => setFormData(prev => ({ ...prev, amountPaid: Number(e.target.value) }))}
-                    placeholder="Amount Paid"
-                  />
-                </div>
-              </>
-            )}
-
-            <div>
-              <Label htmlFor="currency">Currency</Label>
-              <Select value={formData.currency} onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {currencies.map((currency) => (
-                    <SelectItem key={currency.code} value={currency.code}>
-                      {currency.code} - {currency.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Items */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Items</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {formData.items.map((item, index) => (
-              <div key={item.id} className="grid grid-cols-1 md:grid-cols-6 gap-3 items-center">
-                <div className="md:col-span-2">
-                  <Label htmlFor={`description-${item.id}`}>Description</Label>
-                  <Input
-                    id={`description-${item.id}`}
-                    value={item.description}
-                    onChange={(e) => updateItem(item.id, 'description', e.target.value)}
-                    placeholder="Item Description"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
-                  <Input
-                    id={`quantity-${item.id}`}
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) => updateItem(item.id, 'quantity', Number(e.target.value))}
-                    placeholder="1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor={`unitPrice-${item.id}`}>Unit Price</Label>
-                  <Input
-                    id={`unitPrice-${item.id}`}
-                    type="number"
-                    value={item.unitPrice}
-                    onChange={(e) => updateItem(item.id, 'unitPrice', Number(e.target.value))}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor={`taxRate-${item.id}`}>Tax Rate (%)</Label>
-                  <Input
-                    id={`taxRate-${item.id}`}
-                    type="number"
-                    value={item.taxRate}
-                    onChange={(e) => updateItem(item.id, 'taxRate', Number(e.target.value))}
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor={`discount-${item.id}`}>Discount (%)</Label>
-                  <Input
-                    id={`discount-${item.id}`}
-                    type="number"
-                    value={item.discount}
-                    onChange={(e) => updateItem(item.id, 'discount', Number(e.target.value))}
-                    placeholder="0"
-                  />
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => removeItem(item.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            <Button onClick={addItem} variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Item
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Document Customization */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Document Customization</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <div>
               <Label>Color Scheme</Label>
-              <Select value={formData.colorScheme} onValueChange={(value) => setFormData(prev => ({ ...prev, colorScheme: value }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="blue">Ocean Blue</SelectItem>
-                  <SelectItem value="purple">Royal Purple</SelectItem>
-                  <SelectItem value="green">Forest Green</SelectItem>
-                  <SelectItem value="red">Crimson Red</SelectItem>
-                  <SelectItem value="orange">Sunset Orange</SelectItem>
-                  <SelectItem value="teal">Ocean Teal</SelectItem>
-                  <SelectItem value="indigo">Deep Indigo</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-7 gap-2 mt-2">
+                {colorSchemes.map((scheme) => (
+                  <button
+                    key={scheme.id}
+                    className={`relative h-12 rounded-md border-2 transition-all ${
+                      formData.colorScheme === scheme.id 
+                        ? 'border-gray-900 dark:border-white scale-110' 
+                        : 'border-gray-300 hover:scale-105'
+                    }`}
+                    style={{ 
+                      background: `linear-gradient(135deg, ${scheme.primary} 0%, ${scheme.secondary} 100%)` 
+                    }}
+                    onClick={() => setFormData(prev => ({ ...prev, colorScheme: scheme.id }))}
+                    title={scheme.name}
+                  />
+                ))}
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                Selected: {colorSchemes.find(s => s.id === formData.colorScheme)?.name}
+              </p>
             </div>
 
             {formData.type === 'receipt' && (
@@ -579,45 +321,427 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onExportPDF }) => {
                   />
                 </div>
 
-                <div>
-                  <Label>Watermark Color</Label>
-                  <div className="flex gap-2 mt-2">
-                    {['#9ca3af', '#6b7280', '#4b5563', '#374151', '#1f2937'].map(color => (
-                      <button
-                        key={color}
-                        className="w-8 h-8 rounded border-2 border-gray-300"
-                        style={{ backgroundColor: color }}
-                        onClick={() => setFormData(prev => ({ ...prev, watermarkColor: color }))}
-                      />
-                    ))}
+                <div className="space-y-4">
+                  <h4 className="font-medium">Watermark Settings</h4>
+                  
+                  <div>
+                    <Label>Watermark Color</Label>
+                    <div className="grid grid-cols-4 gap-2 mt-2">
+                      {watermarkColors.map((color) => (
+                        <button
+                          key={color.value}
+                          className={`w-full h-10 rounded-md border-2 transition-all ${
+                            formData.watermarkColor === color.value 
+                              ? 'border-gray-900 dark:border-white scale-110' 
+                              : 'border-gray-300 hover:scale-105'
+                          }`}
+                          style={{ backgroundColor: color.value }}
+                          onClick={() => setFormData(prev => ({ ...prev, watermarkColor: color.value }))}
+                          title={color.name}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <Label>Watermark Opacity: {formData.watermarkOpacity}%</Label>
-                  <Slider
-                    value={[formData.watermarkOpacity || 20]}
-                    onValueChange={([value]) => setFormData(prev => ({ ...prev, watermarkOpacity: value }))}
-                    max={100}
-                    step={5}
-                    className="mt-2"
-                  />
-                </div>
+                  <div>
+                    <Label>Watermark Opacity: {formData.watermarkOpacity}%</Label>
+                    <Slider
+                      value={[formData.watermarkOpacity || 20]}
+                      onValueChange={([value]) => setFormData(prev => ({ ...prev, watermarkOpacity: value }))}
+                      min={5}
+                      max={60}
+                      step={5}
+                      className="mt-2"
+                    />
+                  </div>
 
-                <div>
-                  <Label>Watermark Density: {formData.watermarkDensity}%</Label>
-                  <Slider
-                    value={[formData.watermarkDensity || 30]}
-                    onValueChange={([value]) => setFormData(prev => ({ ...prev, watermarkDensity: value }))}
-                    max={100}
-                    step={5}
-                    className="mt-2"
-                  />
+                  <div>
+                    <Label>Watermark Density: {formData.watermarkDensity}%</Label>
+                    <Slider
+                      value={[formData.watermarkDensity || 30]}
+                      onValueChange={([value]) => setFormData(prev => ({ ...prev, watermarkDensity: value }))}
+                      min={10}
+                      max={80}
+                      step={5}
+                      className="mt-2"
+                    />
+                  </div>
                 </div>
               </>
             )}
           </CardContent>
         </Card>
+
+        {/* Business Information - Collapsible */}
+        <Collapsible open={businessOpen} onOpenChange={setBusinessOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <CardTitle className="flex items-center justify-between">
+                  Business Information
+                  {businessOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="businessName">Business Name</Label>
+                  <Input
+                    id="businessName"
+                    value={formData.businessName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
+                    placeholder="Your Business Name"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="businessLogo">Business Logo</Label>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      id="businessLogo"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="flex-1"
+                    />
+                    {formData.businessLogo && (
+                      <img src={formData.businessLogo} alt="Logo" className="h-12 w-12 object-contain border rounded" />
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="businessAddress">Business Address</Label>
+                  <Textarea
+                    id="businessAddress"
+                    value={formData.businessAddress}
+                    onChange={(e) => setFormData(prev => ({ ...prev, businessAddress: e.target.value }))}
+                    placeholder="Business Address"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="businessPhone">Phone</Label>
+                    <Input
+                      id="businessPhone"
+                      value={formData.businessPhone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, businessPhone: e.target.value }))}
+                      placeholder="Phone Number"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="businessEmail">Email</Label>
+                    <Input
+                      id="businessEmail"
+                      type="email"
+                      value={formData.businessEmail}
+                      onChange={(e) => setFormData(prev => ({ ...prev, businessEmail: e.target.value }))}
+                      placeholder="business@example.com"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="businessWebsite">Website</Label>
+                  <Input
+                    id="businessWebsite"
+                    value={formData.businessWebsite}
+                    onChange={(e) => setFormData(prev => ({ ...prev, businessWebsite: e.target.value }))}
+                    placeholder="https://yourwebsite.com"
+                  />
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        {/* Client Information - Collapsible */}
+        <Collapsible open={clientOpen} onOpenChange={setClientOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <CardTitle className="flex items-center justify-between">
+                  Client Information
+                  {clientOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="clientName">Client Name</Label>
+                  <Input
+                    id="clientName"
+                    value={formData.clientName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, clientName: e.target.value }))}
+                    placeholder="Client Name"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="clientAddress">Client Address</Label>
+                  <Textarea
+                    id="clientAddress"
+                    value={formData.clientAddress}
+                    onChange={(e) => setFormData(prev => ({ ...prev, clientAddress: e.target.value }))}
+                    placeholder="Client Address"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="clientPhone">Phone</Label>
+                    <Input
+                      id="clientPhone"
+                      value={formData.clientPhone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, clientPhone: e.target.value }))}
+                      placeholder="Phone Number"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="clientEmail">Email</Label>
+                    <Input
+                      id="clientEmail"
+                      type="email"
+                      value={formData.clientEmail}
+                      onChange={(e) => setFormData(prev => ({ ...prev, clientEmail: e.target.value }))}
+                      placeholder="client@example.com"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        {/* Document Details - Collapsible */}
+        <Collapsible open={documentDetailsOpen} onOpenChange={setDocumentDetailsOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <CardTitle className="flex items-center justify-between">
+                  Document Details
+                  {documentDetailsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="invoiceNumber">
+                      {formData.type === 'invoice' ? 'Invoice' : 'Receipt'} Number
+                    </Label>
+                    <Input
+                      id="invoiceNumber"
+                      value={formData.invoiceNumber}
+                      onChange={(e) => setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))}
+                      placeholder="INV-001"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="invoiceDate">Invoice Date</Label>
+                    <Input
+                      id="invoiceDate"
+                      type="date"
+                      value={formData.invoiceDate}
+                      onChange={(e) => setFormData(prev => ({ ...prev, invoiceDate: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                {formData.type === 'invoice' && (
+                  <div>
+                    <Label htmlFor="dueDate">Due Date</Label>
+                    <Input
+                      id="dueDate"
+                      type="date"
+                      value={formData.dueDate}
+                      onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                    />
+                  </div>
+                )}
+
+                {formData.type === 'receipt' && (
+                  <>
+                    <div>
+                      <Label htmlFor="paymentDate">Payment Date</Label>
+                      <Input
+                        id="paymentDate"
+                        type="date"
+                        value={formData.paymentDate}
+                        onChange={(e) => setFormData(prev => ({ ...prev, paymentDate: e.target.value }))}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="paymentMethod">Payment Method</Label>
+                      <Input
+                        id="paymentMethod"
+                        value={formData.paymentMethod}
+                        onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                        placeholder="Credit Card, Cash, etc."
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="amountPaid">Amount Paid</Label>
+                      <Input
+                        id="amountPaid"
+                        type="number"
+                        value={formData.amountPaid}
+                        onChange={(e) => setFormData(prev => ({ ...prev, amountPaid: Number(e.target.value) }))}
+                        placeholder="Amount Paid"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <Label htmlFor="currency">Currency</Label>
+                  <Select value={formData.currency} onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {currencies.map((currency) => (
+                        <SelectItem key={currency.code} value={currency.code}>
+                          {currency.code} - {currency.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        {/* Items - Collapsible */}
+        <Collapsible open={itemsOpen} onOpenChange={setItemsOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <CardTitle className="flex items-center justify-between">
+                  Items
+                  {itemsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
+                {formData.items.map((item, index) => (
+                  <div key={item.id} className="grid grid-cols-1 md:grid-cols-6 gap-3 items-center">
+                    <div className="md:col-span-2">
+                      <Label htmlFor={`description-${item.id}`}>Description</Label>
+                      <Input
+                        id={`description-${item.id}`}
+                        value={item.description}
+                        onChange={(e) => updateItem(item.id, 'description', e.target.value)}
+                        placeholder="Item Description"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`quantity-${item.id}`}>Quantity</Label>
+                      <Input
+                        id={`quantity-${item.id}`}
+                        type="number"
+                        value={item.quantity}
+                        onChange={(e) => updateItem(item.id, 'quantity', Number(e.target.value))}
+                        placeholder="1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`unitPrice-${item.id}`}>Unit Price</Label>
+                      <Input
+                        id={`unitPrice-${item.id}`}
+                        type="number"
+                        value={item.unitPrice}
+                        onChange={(e) => updateItem(item.id, 'unitPrice', Number(e.target.value))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`taxRate-${item.id}`}>Tax Rate (%)</Label>
+                      <Input
+                        id={`taxRate-${item.id}`}
+                        type="number"
+                        value={item.taxRate}
+                        onChange={(e) => updateItem(item.id, 'taxRate', Number(e.target.value))}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`discount-${item.id}`}>Discount (%)</Label>
+                      <Input
+                        id={`discount-${item.id}`}
+                        type="number"
+                        value={item.discount}
+                        onChange={(e) => updateItem(item.id, 'discount', Number(e.target.value))}
+                        placeholder="0"
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeItem(item.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button onClick={addItem} variant="outline">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Item
+                </Button>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        {/* Notes and Terms - Collapsible */}
+        <Collapsible open={notesOpen} onOpenChange={setNotesOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <CardTitle className="flex items-center justify-between">
+                  Notes & Terms
+                  {notesOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                </CardTitle>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Additional notes or comments"
+                    rows={3}
+                  />
+                </div>
+                {formData.type === 'invoice' && (
+                  <div>
+                    <Label htmlFor="terms">Terms & Conditions</Label>
+                    <Textarea
+                      id="terms"
+                      value={formData.terms}
+                      onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
+                      placeholder="Payment terms and conditions"
+                      rows={3}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
         <div className="flex gap-4">
           <Button onClick={saveProfile} variant="outline" className="flex-1">
