@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -51,7 +52,7 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  .dark {
+  .dark, .dark-mode {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
@@ -98,4 +99,42 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Dark mode styling for consistent app appearance */
+.dark-mode {
+  background-color: #111827;
+  color: #f9fafb;
+}
+
+.dark-mode .bg-white {
+  background-color: #1f2937 !important;
+}
+
+.dark-mode .text-black {
+  color: #f9fafb !important;
+}
+
+.dark-mode .text-gray-900 {
+  color: #f9fafb !important;
+}
+
+.dark-mode .bg-gray-50 {
+  background-color: #374151 !important;
+}
+
+.dark-mode .border-gray-300 {
+  border-color: #4b5563 !important;
+}
+
+/* Watermark styling */
+.watermark-diagonal {
+  animation: none;
+  will-change: auto;
+}
+
+/* Ensure watermark stays behind content */
+.watermark-diagonal * {
+  pointer-events: none;
+  user-select: none;
 }
