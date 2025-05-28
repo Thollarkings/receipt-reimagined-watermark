@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +11,7 @@ import { Plus, Minus, Download, Eye, Palette } from 'lucide-react';
 import { currencies } from '@/lib/currencies';
 import { ReceiptPreview } from './ReceiptPreview';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { InvoiceData, InvoiceItem } from '@/types/invoice';
 
 interface ReceiptItem {
   id: string;
@@ -160,6 +160,46 @@ const ReceiptForm = () => {
     }));
   };
 
+  // Convert ReceiptData to InvoiceData format for preview
+  const convertToInvoiceData = (): InvoiceData => {
+    return {
+      id: Date.now().toString(),
+      type: 'receipt' as const,
+      businessName: receiptData.businessName,
+      businessLogo: receiptData.businessLogo,
+      businessAddress: receiptData.businessAddress,
+      businessPhone: receiptData.businessPhone,
+      businessEmail: receiptData.businessEmail,
+      businessWebsite: receiptData.businessWebsite,
+      clientName: receiptData.clientName,
+      clientAddress: receiptData.clientAddress,
+      clientPhone: receiptData.clientPhone,
+      clientEmail: receiptData.clientEmail,
+      invoiceNumber: receiptData.receiptNumber,
+      invoiceDate: receiptData.receiptDate,
+      dueDate: receiptData.receiptDate, // For receipts, due date same as receipt date
+      paymentDate: receiptData.paymentDate,
+      paymentMethod: receiptData.paymentMethod,
+      currency: receiptData.currency,
+      items: receiptData.items.map(item => ({
+        id: item.id,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        taxRate: item.taxRate,
+        discount: item.discount
+      })) as InvoiceItem[],
+      notes: receiptData.notes,
+      terms: '', // Receipts typically don't have terms
+      amountPaid: receiptData.amountPaid,
+      colorScheme: colorScheme,
+      darkMode: darkMode,
+      watermarkColor: receiptData.watermark.color,
+      watermarkOpacity: receiptData.watermark.opacity,
+      watermarkDensity: receiptData.watermark.density
+    };
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -173,7 +213,11 @@ const ReceiptForm = () => {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
-              <ReceiptPreview data={receiptData} colorScheme={colorScheme} darkMode={darkMode} />
+              <ReceiptPreview 
+                data={convertToInvoiceData()} 
+                colorScheme={colorScheme} 
+                darkMode={darkMode} 
+              />
             </DialogContent>
           </Dialog>
           <Button className="gap-2">
