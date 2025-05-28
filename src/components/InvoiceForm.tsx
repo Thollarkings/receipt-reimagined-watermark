@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +11,7 @@ import { Slider } from '@/components/ui/slider';
 import { Plus, Trash2, FileText, Receipt, Upload, Download } from 'lucide-react';
 import { InvoiceData, InvoiceItem } from '@/types/invoice';
 import { currencies } from '@/lib/currencies';
-import { InvoicePreview } from '@/components/invoice/InvoicePreview';
+import InvoicePreview from '@/components/invoice/InvoicePreview';
 import { ReceiptPreview } from '@/components/receipt/ReceiptPreview';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -69,7 +70,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onExportPDF }) => {
         .from('profiles')
         .select('*')
         .eq('id', user?.id)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         throw error;
@@ -186,13 +187,15 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onExportPDF }) => {
         invoiceNumber: formData.invoiceNumber || generateInvoiceNumber(),
       };
 
-      // Save to database
-      await supabase.from('invoices').insert({
+      // Save to database with proper data structure
+      const { error } = await supabase.from('invoices').insert({
         user_id: user?.id,
         invoice_number: invoiceData.invoiceNumber,
         type: invoiceData.type,
-        data: invoiceData,
+        data: invoiceData as any,
       });
+
+      if (error) throw error;
 
       // Save profile
       await saveProfile();
