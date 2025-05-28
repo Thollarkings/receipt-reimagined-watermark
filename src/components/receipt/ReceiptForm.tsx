@@ -10,7 +10,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Minus, Download, Eye, Palette } from 'lucide-react';
 import { currencies } from '@/lib/currencies';
-import ReceiptPreview from './ReceiptPreview';
+import { ReceiptPreview } from './ReceiptPreview';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 interface ReceiptItem {
