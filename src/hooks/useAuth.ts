@@ -1,11 +1,7 @@
 
 import { useState, useEffect } from 'react';
-
-// Mock auth for demo purposes - replace with actual Supabase auth
-interface User {
-  id: string;
-  email: string;
-}
+import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 interface AuthState {
   user: User | null;
@@ -19,38 +15,46 @@ export const useAuth = () => {
   });
 
   useEffect(() => {
-    // Check for existing session
-    const storedUser = localStorage.getItem('invoiceapp_user');
-    if (storedUser) {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setAuthState({
-        user: JSON.parse(storedUser),
+        user: session?.user ?? null,
         loading: false,
       });
-    } else {
-      setAuthState({
-        user: null,
-        loading: false,
-      });
-    }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setAuthState({
+          user: session?.user ?? null,
+          loading: false,
+        });
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = (email: string, password: string) => {
-    // Mock sign in - replace with Supabase auth
-    const user = { id: '1', email };
-    localStorage.setItem('invoiceapp_user', JSON.stringify(user));
-    setAuthState({ user, loading: false });
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { error };
   };
 
-  const signUp = (email: string, password: string) => {
-    // Mock sign up - replace with Supabase auth
-    const user = { id: '1', email };
-    localStorage.setItem('invoiceapp_user', JSON.stringify(user));
-    setAuthState({ user, loading: false });
+  const signUp = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    return { error };
   };
 
-  const signOut = () => {
-    localStorage.removeItem('invoiceapp_user');
-    setAuthState({ user: null, loading: false });
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    return { error };
   };
 
   return {

@@ -9,7 +9,75 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      invoices: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          invoice_number: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          id?: string
+          invoice_number: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          invoice_number?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          business_address: string | null
+          business_email: string | null
+          business_logo: string | null
+          business_name: string | null
+          business_phone: string | null
+          business_website: string | null
+          created_at: string
+          default_currency: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          business_address?: string | null
+          business_email?: string | null
+          business_logo?: string | null
+          business_name?: string | null
+          business_phone?: string | null
+          business_website?: string | null
+          created_at?: string
+          default_currency?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          business_address?: string | null
+          business_email?: string | null
+          business_logo?: string | null
+          business_name?: string | null
+          business_phone?: string | null
+          business_website?: string | null
+          created_at?: string
+          default_currency?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
