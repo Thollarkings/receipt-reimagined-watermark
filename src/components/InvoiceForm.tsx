@@ -36,15 +36,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onExportPDF }) => {
       watermarkDensity
     };
     
-    // Store current data for printing
-    window.printData = printData;
-    
-    // Use the browser's print functionality
-    setTimeout(() => {
-      window.print();
-    }, 100);
-    
-    // Also call the original export function
+    // Call the export function directly with the enhanced data
     await onExportPDF(printData);
   };
 
