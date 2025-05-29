@@ -11,8 +11,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { InvoiceData, InvoiceItem } from '@/types/invoice';
 import { currencies } from '@/lib/currencies';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useProfileData } from '@/hooks/useProfileData';
 
 interface InvoiceFormComponentProps {
   onExportPDF: (data: InvoiceData) => Promise<void>;
@@ -27,10 +27,11 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { profileData, updateProfile } = useProfileData();
   const [loading, setLoading] = useState(false);
   
   // Accordion state - only one section open at a time
-  const [openSection, setOpenSection] = useState<string | null>(null);
+  const [openSection, setOpenSection] = useState<string | null>('business');
   
   const [formData, setFormData] = useState<InvoiceData>({
     id: '',
@@ -50,7 +51,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
     dueDate: '',
     paymentDate: '',
     paymentMethod: '',
-    currency: 'NGN',
+    currency: 'NGN', // Default to NGN
     items: [{ id: '1', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discount: 0 }],
     notes: '',
     terms: '',
@@ -67,44 +68,52 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
     onDataChange({ ...formData, colorScheme });
   }, [formData, colorScheme, onDataChange]);
 
-  // Load user profile
+  // Load profile data into form when available
   useEffect(() => {
-    if (user) {
-      loadUserProfile();
+    if (profileData && Object.keys(profileData).length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        businessName: profileData.business_name || '',
+        businessLogo: profileData.business_logo || '',
+        businessAddress: profileData.business_address || '',
+        businessPhone: profileData.business_phone || '',
+        businessEmail: profileData.business_email || '',
+        businessWebsite: profileData.business_website || '',
+        currency: profileData.default_currency || 'NGN',
+      }));
     }
-  }, [user]);
-
-  const loadUserProfile = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user?.id)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (data) {
-        setFormData(prev => ({
-          ...prev,
-          businessName: data.business_name || '',
-          businessLogo: data.business_logo || '',
-          businessAddress: data.business_address || '',
-          businessPhone: data.business_phone || '',
-          businessEmail: data.business_email || '',
-          businessWebsite: data.business_website || '',
-          currency: data.default_currency || 'NGN',
-        }));
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error);
-    }
-  };
+  }, [profileData]);
 
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section);
+  };
+
+  const handleBusinessFieldChange = async (field: string, value: string) => {
+    // Update form data immediately
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Debounced save to database
+    const dbField = field === 'businessName' ? 'business_name' :
+                   field === 'businessLogo' ? 'business_logo' :
+                   field === 'businessAddress' ? 'business_address' :
+                   field === 'businessPhone' ? 'business_phone' :
+                   field === 'businessEmail' ? 'business_email' :
+                   field === 'businessWebsite' ? 'business_website' : field;
+    
+    try {
+      await updateProfile({ [dbField]: value });
+    } catch (error) {
+      console.error('Failed to save business data:', error);
+    }
+  };
+
+  const handleCurrencyChange = async (value: string) => {
+    setFormData(prev => ({ ...prev, currency: value }));
+    try {
+      await updateProfile({ default_currency: value });
+    } catch (error) {
+      console.error('Failed to save currency:', error);
+    }
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,7 +122,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
-        setFormData(prev => ({ ...prev, businessLogo: result }));
+        handleBusinessFieldChange('businessLogo', result);
       };
       reader.readAsDataURL(file);
     }
@@ -153,6 +162,15 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (!formData.businessName || !formData.clientName) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in at least the business name and client name before exporting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const invoiceData = {
@@ -167,7 +185,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
       console.error('Error exporting PDF:', error);
       toast({
         title: "Export Failed",
-        description: "Failed to export PDF.",
+        description: "Failed to export PDF. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -195,7 +213,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                 <Input
                   id="businessName"
                   value={formData.businessName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
+                  onChange={(e) => handleBusinessFieldChange('businessName', e.target.value)}
                   placeholder="Your Business Name"
                   className="mt-1"
                 />
@@ -222,7 +240,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                 <Textarea
                   id="businessAddress"
                   value={formData.businessAddress}
-                  onChange={(e) => setFormData(prev => ({ ...prev, businessAddress: e.target.value }))}
+                  onChange={(e) => handleBusinessFieldChange('businessAddress', e.target.value)}
                   placeholder="Your business address"
                   rows={3}
                   className="mt-1"
@@ -235,7 +253,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                   <Input
                     id="businessPhone"
                     value={formData.businessPhone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, businessPhone: e.target.value }))}
+                    onChange={(e) => handleBusinessFieldChange('businessPhone', e.target.value)}
                     placeholder="Phone Number"
                     className="mt-1"
                   />
@@ -246,7 +264,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                     id="businessEmail"
                     type="email"
                     value={formData.businessEmail}
-                    onChange={(e) => setFormData(prev => ({ ...prev, businessEmail: e.target.value }))}
+                    onChange={(e) => handleBusinessFieldChange('businessEmail', e.target.value)}
                     placeholder="business@example.com"
                     className="mt-1"
                   />
@@ -258,7 +276,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                 <Input
                   id="businessWebsite"
                   value={formData.businessWebsite}
-                  onChange={(e) => setFormData(prev => ({ ...prev, businessWebsite: e.target.value }))}
+                  onChange={(e) => handleBusinessFieldChange('businessWebsite', e.target.value)}
                   placeholder="https://yourwebsite.com"
                   className="mt-1"
                 />
@@ -381,7 +399,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                 </div>
                 <div>
                   <Label htmlFor="currency">Currency</Label>
-                  <Select value={formData.currency} onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}>
+                  <Select value={formData.currency} onValueChange={handleCurrencyChange}>
                     <SelectTrigger className="mt-1">
                       <SelectValue />
                     </SelectTrigger>
@@ -538,7 +556,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
       {/* Export Button */}
       <div className="pt-6">
         <Button onClick={handleSubmit} disabled={loading} className="w-full h-12 text-lg">
-          {loading ? 'Processing...' : 'Export PDF'}
+          {loading ? 'Generating PDF...' : 'Export PDF'}
           <Download className="ml-2 h-5 w-5" />
         </Button>
       </div>
