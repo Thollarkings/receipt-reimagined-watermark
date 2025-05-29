@@ -107,7 +107,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 dark:bg-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
       <header className="bg-gray-800/50 shadow-sm border-b border-gray-700/50 sticky top-0 z-50 backdrop-blur-md">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">

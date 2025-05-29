@@ -35,7 +35,7 @@ export const UserMenu: React.FC = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="flex items-center gap-2">
+        <Button variant="ghost" className="flex items-center gap-2 text-gray-100 hover:bg-gray-200">
           <User className="h-4 w-4" />
           {user?.email}
         </Button>
