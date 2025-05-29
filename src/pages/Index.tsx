@@ -33,7 +33,7 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 dark:bg-gray-900">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-400"></div>
       </div>
     );
@@ -41,7 +41,7 @@ const Index = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900">
+      <div className="min-h-screen bg-gray-900 dark:bg-gray-900 text-white">
         <div className="container mx-auto px-6 py-16">
           <div className="text-center mb-16">
             <h1 className="text-7xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent mb-6">
@@ -62,7 +62,7 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
-            <div className="text-center p-8 bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 hover:bg-white/15 transition-all">
+            <div className="text-center p-8 bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-700/50 hover:bg-gray-800/70 transition-all">
               <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <FileText className="h-8 w-8 text-white" />
               </div>
@@ -70,7 +70,7 @@ const Index = () => {
               <p className="text-gray-300 text-lg">Choose from 7 stunning color themes to match your brand perfectly</p>
             </div>
             
-            <div className="text-center p-8 bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 hover:bg-white/15 transition-all">
+            <div className="text-center p-8 bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-700/50 hover:bg-gray-800/70 transition-all">
               <div className="w-16 h-16 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <CreditCard className="h-8 w-8 text-white" />
               </div>
@@ -78,7 +78,7 @@ const Index = () => {
               <p className="text-gray-300 text-lg">Support for all major currencies worldwide with live conversion</p>
             </div>
             
-            <div className="text-center p-8 bg-white/10 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 hover:bg-white/15 transition-all">
+            <div className="text-center p-8 bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-700/50 hover:bg-gray-800/70 transition-all">
               <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Download className="h-8 w-8 text-white" />
               </div>
@@ -89,11 +89,11 @@ const Index = () => {
 
           <div className="text-center">
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              <div className="p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+              <div className="p-6 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/30">
                 <h4 className="text-xl font-semibold text-white mb-3">Advanced Watermarks</h4>
                 <p className="text-gray-400">Customize watermark color, opacity, and density for professional branding</p>
               </div>
-              <div className="p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+              <div className="p-6 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/30">
                 <h4 className="text-xl font-semibold text-white mb-3">Dark Mode Receipts</h4>
                 <p className="text-gray-400">Modern dark theme receipts with bold, vibrant colors</p>
               </div>
@@ -107,10 +107,10 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      <header className="bg-white shadow-sm border-b sticky top-0 z-50">
+    <div className="min-h-screen bg-gray-900 dark:bg-gray-900 text-white">
+      <header className="bg-gray-800/50 shadow-sm border-b border-gray-700/50 sticky top-0 z-50 backdrop-blur-md">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             InvoiceMax
           </h1>
           <UserMenu />
