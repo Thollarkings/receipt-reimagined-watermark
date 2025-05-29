@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { getCurrencySymbol } from '@/lib/currencies';
 import { InvoiceData } from '@/types/invoice';
@@ -63,14 +62,100 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
 
   const totals = calculateTotals();
 
-  const getWatermarkText = () => {
-    if (!data.businessName) return '';
-    const businessNameUpper = data.businessName.toUpperCase();
-    const repetitions = Math.max(1, Math.floor(watermarkDensity / 2));
-    return (businessNameUpper + '    ').repeat(repetitions);
+  const hexToRgb = (hex: string) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+      ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+      : '156, 163, 175';
   };
 
-  const watermarkText = getWatermarkText();
+  const getWatermarkStyle = () => {
+    if (!data.businessName) return {};
+    
+    const rgbColor = hexToRgb(watermarkColor);
+    const opacity = watermarkOpacity / 100;
+    
+    // Create randomized watermark pattern
+    const generateRandomPattern = () => {
+      const patterns = [];
+      const instanceCount = Math.floor((watermarkDensity || 30) / 10);
+      
+      for (let i = 0; i < instanceCount; i++) {
+        const x = Math.random() * 100;
+        const y = Math.random() * 100;
+        const rotation = Math.random() * 60 - 30; // Random rotation between -30 and 30 degrees
+        const scale = 0.8 + Math.random() * 0.4; // Random scale between 0.8 and 1.2
+        
+        patterns.push(`
+          <div style="
+            position: absolute;
+            left: ${x}%;
+            top: ${y}%;
+            transform: rotate(${rotation}deg) scale(${scale});
+            color: rgba(${rgbColor}, ${opacity});
+            font-size: 24px;
+            font-weight: bold;
+            white-space: nowrap;
+            pointer-events: none;
+            user-select: none;
+          ">
+            ${data.businessName}
+          </div>
+        `);
+      }
+      
+      return patterns.join('');
+    };
+    
+    return {
+      position: 'absolute' as const,
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      pointerEvents: 'none' as const,
+      zIndex: 1,
+      overflow: 'hidden',
+    };
+  };
+
+  const renderWatermark = () => {
+    if (!data.businessName) return null;
+    
+    const rgbColor = hexToRgb(watermarkColor);
+    const opacity = watermarkOpacity / 100;
+    const instanceCount = Math.floor((watermarkDensity || 30) / 8);
+    
+    const watermarkInstances = [];
+    for (let i = 0; i < instanceCount; i++) {
+      const x = Math.random() * 90 + 5; // 5% to 95% to keep within bounds
+      const y = Math.random() * 90 + 5;
+      const rotation = Math.random() * 60 - 30;
+      const scale = 0.7 + Math.random() * 0.6;
+      
+      watermarkInstances.push(
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            left: `${x}%`,
+            top: `${y}%`,
+            transform: `rotate(${rotation}deg) scale(${scale})`,
+            color: `rgba(${rgbColor}, ${opacity})`,
+            fontSize: '20px',
+            fontWeight: 'bold',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}
+        >
+          {data.businessName}
+        </div>
+      );
+    }
+    
+    return watermarkInstances;
+  };
 
   return (
     <div className="relative">
@@ -78,46 +163,12 @@ export const ReceiptPreview: React.FC<ReceiptPreviewProps> = ({
         className={`max-w-4xl mx-auto p-8 shadow-2xl relative overflow-hidden ${
           darkMode ? 'bg-gray-900 text-white' : 'bg-white text-black'
         }`} 
-        style={{ 
-          fontFamily: 'system-ui', 
-          minHeight: '600px'
-        }}
-        data-watermark={watermarkText}
+        style={{ fontFamily: 'system-ui', minHeight: '600px' }}
       >
-        {/* Diagonal Watermark */}
+        {/* Watermark */}
         {data.businessName && (
-          <div
-            className="watermark-diagonal"
-            style={{
-              position: 'absolute',
-              top: '-50%',
-              left: '-50%',
-              width: '200%',
-              height: '200%',
-              transform: 'rotate(-45deg)',
-              fontSize: '24px',
-              fontWeight: 'bold',
-              opacity: watermarkOpacity / 100,
-              color: watermarkColor,
-              lineHeight: '4em',
-              letterSpacing: '20px',
-              whiteSpace: 'pre',
-              pointerEvents: 'none',
-              userSelect: 'none',
-              zIndex: 1,
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              textAlign: 'center'
-            }}
-          >
-            {Array.from({ length: Math.floor(watermarkDensity / 5) }, (_, i) => (
-              <div key={i} style={{ width: '100%' }}>
-                {watermarkText}
-              </div>
-            ))}
+          <div style={getWatermarkStyle()}>
+            {renderWatermark()}
           </div>
         )}
 
