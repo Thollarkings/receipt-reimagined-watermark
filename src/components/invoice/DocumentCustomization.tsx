@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -7,26 +7,12 @@ import { Slider } from '@/components/ui/slider';
 import { Palette, ChevronDown, ChevronUp } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
-interface ColorScheme {
-  id: string;
-  name: string;
-  primary: string;
-  secondary: string;
-}
-
-interface WatermarkColor {
-  name: string;
-  value: string;
-}
-
 interface DocumentCustomizationProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
   documentType: 'invoice' | 'receipt';
   colorScheme: string;
   onColorSchemeChange: (scheme: string) => void;
   darkMode?: boolean;
-  onDarkModeChange?: (darkMode: boolean) => void;
+  onDarkModeChange?: (enabled: boolean) => void;
   watermarkColor?: string;
   onWatermarkColorChange?: (color: string) => void;
   watermarkOpacity?: number;
@@ -35,44 +21,44 @@ interface DocumentCustomizationProps {
   onWatermarkDensityChange?: (density: number) => void;
 }
 
-const colorSchemes: ColorScheme[] = [
-  { id: 'blue', name: 'Ocean Blue', primary: '#2563eb', secondary: '#3b82f6' },
-  { id: 'purple', name: 'Royal Purple', primary: '#9333ea', secondary: '#a855f7' },
-  { id: 'green', name: 'Forest Green', primary: '#16a34a', secondary: '#22c55e' },
-  { id: 'red', name: 'Crimson Red', primary: '#dc2626', secondary: '#ef4444' },
-  { id: 'orange', name: 'Sunset Orange', primary: '#ea580c', secondary: '#f97316' },
-  { id: 'teal', name: 'Ocean Teal', primary: '#0d9488', secondary: '#14b8a6' },
-  { id: 'indigo', name: 'Deep Indigo', primary: '#4338ca', secondary: '#6366f1' }
-];
-
-const watermarkColors: WatermarkColor[] = [
-  { name: 'Light Gray', value: '#9ca3af' },
-  { name: 'Blue Gray', value: '#64748b' },
-  { name: 'Rose', value: '#f43f5e' },
-  { name: 'Amber', value: '#f59e0b' },
-  { name: 'Emerald', value: '#10b981' },
-  { name: 'Violet', value: '#8b5cf6' },
-  { name: 'Cyan', value: '#06b6d4' },
-  { name: 'Pink', value: '#ec4899' }
-];
-
 export const DocumentCustomization: React.FC<DocumentCustomizationProps> = ({
-  isOpen,
-  onOpenChange,
   documentType,
   colorScheme,
   onColorSchemeChange,
-  darkMode,
+  darkMode = false,
   onDarkModeChange,
-  watermarkColor,
+  watermarkColor = '#9ca3af',
   onWatermarkColorChange,
-  watermarkOpacity,
+  watermarkOpacity = 20,
   onWatermarkOpacityChange,
-  watermarkDensity,
+  watermarkDensity = 30,
   onWatermarkDensityChange,
 }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const colorSchemes = [
+    { id: 'blue', name: 'Ocean Blue', primary: '#2563eb', secondary: '#3b82f6' },
+    { id: 'purple', name: 'Royal Purple', primary: '#9333ea', secondary: '#a855f7' },
+    { id: 'green', name: 'Forest Green', primary: '#16a34a', secondary: '#22c55e' },
+    { id: 'red', name: 'Crimson Red', primary: '#dc2626', secondary: '#ef4444' },
+    { id: 'orange', name: 'Sunset Orange', primary: '#ea580c', secondary: '#f97316' },
+    { id: 'teal', name: 'Ocean Teal', primary: '#0d9488', secondary: '#14b8a6' },
+    { id: 'indigo', name: 'Deep Indigo', primary: '#4338ca', secondary: '#6366f1' }
+  ];
+
+  const watermarkColors = [
+    { name: 'Light Gray', value: '#9ca3af' },
+    { name: 'Blue Gray', value: '#64748b' },
+    { name: 'Rose', value: '#f43f5e' },
+    { name: 'Amber', value: '#f59e0b' },
+    { name: 'Emerald', value: '#10b981' },
+    { name: 'Violet', value: '#8b5cf6' },
+    { name: 'Cyan', value: '#06b6d4' },
+    { name: 'Pink', value: '#ec4899' }
+  ];
+
   return (
-    <Collapsible open={isOpen} onOpenChange={onOpenChange}>
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card>
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
@@ -88,15 +74,15 @@ export const DocumentCustomization: React.FC<DocumentCustomizationProps> = ({
         <CollapsibleContent>
           <CardContent className="space-y-6">
             <div>
-              <Label>Color Scheme</Label>
-              <div className="grid grid-cols-7 gap-2 mt-2">
+              <Label className="text-base font-medium mb-3 block">Color Scheme</Label>
+              <div className="grid grid-cols-7 gap-3">
                 {colorSchemes.map((scheme) => (
                   <button
                     key={scheme.id}
-                    className={`relative h-12 rounded-md border-2 transition-all ${
+                    className={`relative h-12 rounded-lg border-2 transition-all transform hover:scale-105 ${
                       colorScheme === scheme.id 
-                        ? 'border-gray-900 dark:border-white scale-110' 
-                        : 'border-gray-300 hover:scale-105'
+                        ? 'border-gray-900 dark:border-white scale-110 shadow-lg' 
+                        : 'border-gray-300 hover:border-gray-400'
                     }`}
                     style={{ 
                       background: `linear-gradient(135deg, ${scheme.primary} 0%, ${scheme.secondary} 100%)` 
@@ -106,34 +92,34 @@ export const DocumentCustomization: React.FC<DocumentCustomizationProps> = ({
                   />
                 ))}
               </div>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                 Selected: {colorSchemes.find(s => s.id === colorScheme)?.name}
               </p>
             </div>
 
             {documentType === 'receipt' && (
               <>
-                <div className="flex items-center justify-between">
-                  <Label>Dark Mode</Label>
+                <div className="flex items-center justify-between py-2">
+                  <Label className="text-base font-medium">Dark Mode</Label>
                   <Switch
                     checked={darkMode}
                     onCheckedChange={onDarkModeChange}
                   />
                 </div>
 
-                <div className="space-y-4">
-                  <h4 className="font-medium">Watermark Settings</h4>
+                <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <h4 className="font-medium text-base">Watermark Settings</h4>
                   
                   <div>
-                    <Label>Watermark Color</Label>
-                    <div className="grid grid-cols-4 gap-2 mt-2">
+                    <Label className="text-sm font-medium mb-3 block">Watermark Color</Label>
+                    <div className="grid grid-cols-4 gap-3">
                       {watermarkColors.map((color) => (
                         <button
                           key={color.value}
-                          className={`w-full h-10 rounded-md border-2 transition-all ${
+                          className={`w-full h-12 rounded-lg border-2 transition-all transform hover:scale-105 ${
                             watermarkColor === color.value 
-                              ? 'border-gray-900 dark:border-white scale-110' 
-                              : 'border-gray-300 hover:scale-105'
+                              ? 'border-gray-900 dark:border-white scale-110 shadow-lg' 
+                              : 'border-gray-300 hover:border-gray-400'
                           }`}
                           style={{ backgroundColor: color.value }}
                           onClick={() => onWatermarkColorChange?.(color.value)}
@@ -144,26 +130,30 @@ export const DocumentCustomization: React.FC<DocumentCustomizationProps> = ({
                   </div>
 
                   <div>
-                    <Label>Watermark Opacity: {watermarkOpacity}%</Label>
+                    <Label className="text-sm font-medium mb-3 block">
+                      Watermark Opacity: {watermarkOpacity}%
+                    </Label>
                     <Slider
-                      value={[watermarkOpacity || 20]}
+                      value={[watermarkOpacity]}
                       onValueChange={([value]) => onWatermarkOpacityChange?.(value)}
                       min={5}
                       max={60}
                       step={5}
-                      className="mt-2"
+                      className="w-full"
                     />
                   </div>
 
                   <div>
-                    <Label>Watermark Density: {watermarkDensity}%</Label>
+                    <Label className="text-sm font-medium mb-3 block">
+                      Watermark Density: {watermarkDensity}%
+                    </Label>
                     <Slider
-                      value={[watermarkDensity || 30]}
+                      value={[watermarkDensity]}
                       onValueChange={([value]) => onWatermarkDensityChange?.(value)}
                       min={10}
                       max={80}
                       step={5}
-                      className="mt-2"
+                      className="w-full"
                     />
                   </div>
                 </div>
