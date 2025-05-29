@@ -18,9 +18,23 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface ReceiptFormComponentProps {
   onExportPDF: (data: InvoiceData) => Promise<void>;
+  onDataChange?: (data: InvoiceData) => void;
+  colorScheme?: string;
+  darkMode?: boolean;
+  watermarkColor?: string;
+  watermarkOpacity?: number;
+  watermarkDensity?: number;
 }
 
-export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onExportPDF }) => {
+export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ 
+  onExportPDF, 
+  onDataChange,
+  colorScheme = 'blue',
+  darkMode = false,
+  watermarkColor = '#9ca3af',
+  watermarkOpacity = 20,
+  watermarkDensity = 30
+}) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -56,11 +70,11 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
     notes: '',
     terms: '',
     amountPaid: 0,
-    colorScheme: 'blue',
-    darkMode: false,
-    watermarkColor: '#9ca3af',
-    watermarkOpacity: 20,
-    watermarkDensity: 30,
+    colorScheme,
+    darkMode,
+    watermarkColor,
+    watermarkOpacity,
+    watermarkDensity,
   });
 
   const colorSchemes = [
@@ -155,13 +169,29 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
     }
   };
 
+  // Update the formData state change handler
+  const updateFormData = (updates: Partial<InvoiceData>) => {
+    const newData = { 
+      ...formData, 
+      ...updates, 
+      colorScheme,
+      darkMode,
+      watermarkColor,
+      watermarkOpacity,
+      watermarkDensity
+    };
+    setFormData(newData);
+    onDataChange?.(newData);
+  };
+
+  // Update all form field change handlers to use updateFormData
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
-        setFormData(prev => ({ ...prev, businessLogo: result }));
+        updateFormData({ businessLogo: result });
       };
       reader.readAsDataURL(file);
     }
@@ -176,26 +206,18 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
       taxRate: 0,
       discount: 0,
     };
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, newItem],
-    }));
+    updateFormData({ items: [...formData.items, newItem] });
   };
 
   const removeItem = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      items: prev.items.filter(item => item.id !== id),
-    }));
+    updateFormData({ items: formData.items.filter(item => item.id !== id) });
   };
 
   const updateItem = (id: string, field: keyof InvoiceItem, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      items: prev.items.map(item =>
-        item.id === id ? { ...item, [field]: value } : item
-      ),
-    }));
+    const updatedItems = formData.items.map(item =>
+      item.id === id ? { ...item, [field]: value } : item
+    );
+    updateFormData({ items: updatedItems });
   };
 
   const generateReceiptNumber = () => {
@@ -362,7 +384,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                   <Input
                     id="businessName"
                     value={formData.businessName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
+                    onChange={(e) => updateFormData({ businessName: e.target.value })}
                     placeholder="Your Business Name"
                   />
                 </div>
@@ -388,7 +410,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                   <Textarea
                     id="businessAddress"
                     value={formData.businessAddress}
-                    onChange={(e) => setFormData(prev => ({ ...prev, businessAddress: e.target.value }))}
+                    onChange={(e) => updateFormData({ businessAddress: e.target.value })}
                     placeholder="Business Address"
                     rows={3}
                   />
@@ -400,7 +422,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                     <Input
                       id="businessPhone"
                       value={formData.businessPhone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, businessPhone: e.target.value }))}
+                      onChange={(e) => updateFormData({ businessPhone: e.target.value })}
                       placeholder="Phone Number"
                     />
                   </div>
@@ -410,7 +432,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                       id="businessEmail"
                       type="email"
                       value={formData.businessEmail}
-                      onChange={(e) => setFormData(prev => ({ ...prev, businessEmail: e.target.value }))}
+                      onChange={(e) => updateFormData({ businessEmail: e.target.value })}
                       placeholder="business@example.com"
                     />
                   </div>
@@ -421,7 +443,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                   <Input
                     id="businessWebsite"
                     value={formData.businessWebsite}
-                    onChange={(e) => setFormData(prev => ({ ...prev, businessWebsite: e.target.value }))}
+                    onChange={(e) => updateFormData({ businessWebsite: e.target.value })}
                     placeholder="https://yourwebsite.com"
                   />
                 </div>
@@ -448,7 +470,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                   <Input
                     id="clientName"
                     value={formData.clientName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, clientName: e.target.value }))}
+                    onChange={(e) => updateFormData({ clientName: e.target.value })}
                     placeholder="Client Name"
                   />
                 </div>
@@ -458,7 +480,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                   <Textarea
                     id="clientAddress"
                     value={formData.clientAddress}
-                    onChange={(e) => setFormData(prev => ({ ...prev, clientAddress: e.target.value }))}
+                    onChange={(e) => updateFormData({ clientAddress: e.target.value })}
                     placeholder="Client Address"
                     rows={3}
                   />
@@ -470,7 +492,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                     <Input
                       id="clientPhone"
                       value={formData.clientPhone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, clientPhone: e.target.value }))}
+                      onChange={(e) => updateFormData({ clientPhone: e.target.value })}
                       placeholder="Phone Number"
                     />
                   </div>
@@ -480,7 +502,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                       id="clientEmail"
                       type="email"
                       value={formData.clientEmail}
-                      onChange={(e) => setFormData(prev => ({ ...prev, clientEmail: e.target.value }))}
+                      onChange={(e) => updateFormData({ clientEmail: e.target.value })}
                       placeholder="client@example.com"
                     />
                   </div>
@@ -509,7 +531,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                     <Input
                       id="invoiceNumber"
                       value={formData.invoiceNumber}
-                      onChange={(e) => setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))}
+                      onChange={(e) => updateFormData({ invoiceNumber: e.target.value })}
                       placeholder="REC-001"
                     />
                   </div>
@@ -519,7 +541,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                       id="invoiceDate"
                       type="date"
                       value={formData.invoiceDate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, invoiceDate: e.target.value }))}
+                      onChange={(e) => updateFormData({ invoiceDate: e.target.value })}
                     />
                   </div>
                 </div>
@@ -530,7 +552,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                     id="paymentDate"
                     type="date"
                     value={formData.paymentDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, paymentDate: e.target.value }))}
+                    onChange={(e) => updateFormData({ paymentDate: e.target.value })}
                   />
                 </div>
 
@@ -539,7 +561,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                   <Input
                     id="paymentMethod"
                     value={formData.paymentMethod}
-                    onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                    onChange={(e) => updateFormData({ paymentMethod: e.target.value })}
                     placeholder="Credit Card, Cash, etc."
                   />
                 </div>
@@ -550,7 +572,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                     id="amountPaid"
                     type="number"
                     value={formData.amountPaid}
-                    onChange={(e) => setFormData(prev => ({ ...prev, amountPaid: Number(e.target.value) }))}
+                    onChange={(e) => updateFormData({ amountPaid: Number(e.target.value) })}
                     placeholder="Amount Paid"
                   />
                 </div>
@@ -675,7 +697,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ onEx
                   <Textarea
                     id="notes"
                     value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    onChange={(e) => updateFormData({ notes: e.target.value })}
                     placeholder="Additional notes or comments"
                     rows={3}
                   />

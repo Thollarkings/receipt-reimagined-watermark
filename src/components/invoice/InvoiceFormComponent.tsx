@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,9 +16,15 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface InvoiceFormComponentProps {
   onExportPDF: (data: InvoiceData) => Promise<void>;
+  onDataChange?: (data: InvoiceData) => void;
+  colorScheme?: string;
 }
 
-export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onExportPDF }) => {
+export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ 
+  onExportPDF, 
+  onDataChange,
+  colorScheme = 'blue'
+}) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -143,13 +148,21 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
     }
   };
 
+  // Update the formData state change handler
+  const updateFormData = (updates: Partial<InvoiceData>) => {
+    const newData = { ...formData, ...updates, colorScheme };
+    setFormData(newData);
+    onDataChange?.(newData);
+  };
+
+  // Update all form field change handlers to use updateFormData
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
-        setFormData(prev => ({ ...prev, businessLogo: result }));
+        updateFormData({ businessLogo: result });
       };
       reader.readAsDataURL(file);
     }
@@ -164,26 +177,18 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
       taxRate: 0,
       discount: 0,
     };
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, newItem],
-    }));
+    updateFormData({ items: [...formData.items, newItem] });
   };
 
   const removeItem = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      items: prev.items.filter(item => item.id !== id),
-    }));
+    updateFormData({ items: formData.items.filter(item => item.id !== id) });
   };
 
   const updateItem = (id: string, field: keyof InvoiceItem, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      items: prev.items.map(item =>
-        item.id === id ? { ...item, [field]: value } : item
-      ),
-    }));
+    const updatedItems = formData.items.map(item =>
+      item.id === id ? { ...item, [field]: value } : item
+    );
+    updateFormData({ items: updatedItems });
   };
 
   const generateInvoiceNumber = () => {
@@ -191,7 +196,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
     return `INV-${number}`;
   };
 
-  const handleExportPDF = async () => {
+  const handleSubmit = async () => {
     setLoading(true);
     try {
       const invoiceData = {
@@ -230,9 +235,9 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <>
       {/* Form Section */}
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Document Customization */}
         <Collapsible open={customizationOpen} onOpenChange={setCustomizationOpen}>
           <Card>
@@ -295,7 +300,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                   <Input
                     id="businessName"
                     value={formData.businessName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, businessName: e.target.value }))}
+                    onChange={(e) => updateFormData({ businessName: e.target.value })}
                     placeholder="Your Business Name"
                   />
                 </div>
@@ -321,7 +326,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                   <Textarea
                     id="businessAddress"
                     value={formData.businessAddress}
-                    onChange={(e) => setFormData(prev => ({ ...prev, businessAddress: e.target.value }))}
+                    onChange={(e) => updateFormData({ businessAddress: e.target.value })}
                     placeholder="Business Address"
                     rows={3}
                   />
@@ -333,7 +338,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                     <Input
                       id="businessPhone"
                       value={formData.businessPhone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, businessPhone: e.target.value }))}
+                      onChange={(e) => updateFormData({ businessPhone: e.target.value })}
                       placeholder="Phone Number"
                     />
                   </div>
@@ -343,7 +348,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                       id="businessEmail"
                       type="email"
                       value={formData.businessEmail}
-                      onChange={(e) => setFormData(prev => ({ ...prev, businessEmail: e.target.value }))}
+                      onChange={(e) => updateFormData({ businessEmail: e.target.value })}
                       placeholder="business@example.com"
                     />
                   </div>
@@ -354,7 +359,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                   <Input
                     id="businessWebsite"
                     value={formData.businessWebsite}
-                    onChange={(e) => setFormData(prev => ({ ...prev, businessWebsite: e.target.value }))}
+                    onChange={(e) => updateFormData({ businessWebsite: e.target.value })}
                     placeholder="https://yourwebsite.com"
                   />
                 </div>
@@ -381,7 +386,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                   <Input
                     id="clientName"
                     value={formData.clientName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, clientName: e.target.value }))}
+                    onChange={(e) => updateFormData({ clientName: e.target.value })}
                     placeholder="Client Name"
                   />
                 </div>
@@ -391,7 +396,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                   <Textarea
                     id="clientAddress"
                     value={formData.clientAddress}
-                    onChange={(e) => setFormData(prev => ({ ...prev, clientAddress: e.target.value }))}
+                    onChange={(e) => updateFormData({ clientAddress: e.target.value })}
                     placeholder="Client Address"
                     rows={3}
                   />
@@ -403,7 +408,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                     <Input
                       id="clientPhone"
                       value={formData.clientPhone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, clientPhone: e.target.value }))}
+                      onChange={(e) => updateFormData({ clientPhone: e.target.value })}
                       placeholder="Phone Number"
                     />
                   </div>
@@ -413,7 +418,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                       id="clientEmail"
                       type="email"
                       value={formData.clientEmail}
-                      onChange={(e) => setFormData(prev => ({ ...prev, clientEmail: e.target.value }))}
+                      onChange={(e) => updateFormData({ clientEmail: e.target.value })}
                       placeholder="client@example.com"
                     />
                   </div>
@@ -429,7 +434,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
             <CollapsibleTrigger asChild>
               <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 <CardTitle className="flex items-center justify-between">
-                  Document Details
+                  Invoice Details
                   {documentDetailsOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                 </CardTitle>
               </CardHeader>
@@ -442,7 +447,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                     <Input
                       id="invoiceNumber"
                       value={formData.invoiceNumber}
-                      onChange={(e) => setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))}
+                      onChange={(e) => updateFormData({ invoiceNumber: e.target.value })}
                       placeholder="INV-001"
                     />
                   </div>
@@ -452,7 +457,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                       id="invoiceDate"
                       type="date"
                       value={formData.invoiceDate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, invoiceDate: e.target.value }))}
+                      onChange={(e) => updateFormData({ invoiceDate: e.target.value })}
                     />
                   </div>
                 </div>
@@ -463,13 +468,13 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                     id="dueDate"
                     type="date"
                     value={formData.dueDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                    onChange={(e) => updateFormData({ dueDate: e.target.value })}
                   />
                 </div>
 
                 <div>
                   <Label htmlFor="currency">Currency</Label>
-                  <Select value={formData.currency} onValueChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}>
+                  <Select value={formData.currency} onValueChange={(value) => updateFormData({ currency: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -587,7 +592,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                   <Textarea
                     id="notes"
                     value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    onChange={(e) => updateFormData({ notes: e.target.value })}
                     placeholder="Additional notes or comments"
                     rows={3}
                   />
@@ -597,7 +602,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
                   <Textarea
                     id="terms"
                     value={formData.terms}
-                    onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
+                    onChange={(e) => updateFormData({ terms: e.target.value })}
                     placeholder="Payment terms and conditions"
                     rows={3}
                   />
@@ -611,7 +616,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
           <Button onClick={saveProfile} variant="outline" className="flex-1">
             Save Profile
           </Button>
-          <Button onClick={handleExportPDF} disabled={loading} className="flex-1">
+          <Button onClick={handleSubmit} disabled={loading} className="flex-1">
             {loading ? 'Processing...' : 'Export PDF'}
             <Download className="ml-2 h-4 w-4" />
           </Button>
@@ -622,6 +627,6 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ onEx
       <div className="lg:sticky lg:top-6">
         <InvoicePreview data={formData} colorScheme={formData.colorScheme} />
       </div>
-    </div>
+    </>
   );
 };
