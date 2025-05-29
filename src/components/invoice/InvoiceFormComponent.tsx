@@ -277,8 +277,8 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                 Client Information
                 {openSection === 'client' ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
               </CardTitle>
-            </CollapsibleTrigger>
-          </CollapsibleContent>
+            </CardHeader>
+          </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-4">
               <div>
@@ -341,7 +341,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                 Invoice Details
                 {openSection === 'details' ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
               </CardTitle>
-            </CollapsibleTrigger>
+            </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-4">
@@ -409,7 +409,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                 Items
                 {openSection === 'items' ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
               </CardTitle>
-            </CollapsibleTrigger>
+            </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-4">
@@ -504,7 +504,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                 Notes & Terms
                 {openSection === 'notes' ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
               </CardTitle>
-            </CollapsibleTrigger>
+            </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-4">
