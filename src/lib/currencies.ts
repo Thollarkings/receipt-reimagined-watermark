@@ -6,6 +6,7 @@ export interface Currency {
 }
 
 export const currencies: Currency[] = [
+  { code: 'NGN', name: 'Nigerian Naira', symbol: '₦' },
   { code: 'USD', name: 'US Dollar', symbol: '$' },
   { code: 'EUR', name: 'Euro', symbol: '€' },
   { code: 'GBP', name: 'British Pound', symbol: '£' },
@@ -38,7 +39,6 @@ export const currencies: Currency[] = [
   { code: 'SAR', name: 'Saudi Riyal', symbol: '﷼' },
   { code: 'EGP', name: 'Egyptian Pound', symbol: '£' },
   { code: 'ILS', name: 'Israeli Shekel', symbol: '₪' },
-  { code: 'NGN', name: 'Nigerian Naira', symbol: '₦' },
   { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh' },
   { code: 'GHS', name: 'Ghanaian Cedi', symbol: '₵' },
   { code: 'UGX', name: 'Ugandan Shilling', symbol: 'USh' },

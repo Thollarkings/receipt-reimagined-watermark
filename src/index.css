@@ -138,3 +138,40 @@
   pointer-events: none;
   user-select: none;
 }
+
+/* Print styles for PDF export */
+@media print {
+  @page {
+    margin: 0.5in;
+    size: A4;
+  }
+  
+  body * {
+    visibility: hidden;
+  }
+  
+  .lg\\:sticky, .lg\\:sticky * {
+    visibility: visible;
+  }
+  
+  .lg\\:sticky {
+    position: static !important;
+    top: auto !important;
+  }
+  
+  /* Hide everything except the preview */
+  .grid.grid-cols-1.lg\\:grid-cols-2 > div:first-child {
+    display: none !important;
+  }
+  
+  .grid.grid-cols-1.lg\\:grid-cols-2 > div:last-child {
+    width: 100% !important;
+    max-width: none !important;
+  }
+  
+  /* Ensure colors are preserved in print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}
