@@ -13,6 +13,8 @@ import { currencies } from '@/lib/currencies';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfileData } from '@/hooks/useProfileData';
+import { useDraftData } from '@/hooks/useDraftData';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface InvoiceFormComponentProps {
   onExportPDF: (data: InvoiceData) => Promise<void>;
@@ -28,7 +30,9 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const { profileData, updateProfile } = useProfileData();
-  const [loading, setLoading] = useState(false);
+  const { draftData, clientData, loading, saveDraftData, saveClientData, setDraftData, setClientData } = useDraftData('invoice');
+  const [localItems, setLocalItems] = useLocalStorage<InvoiceItem[]>('invoice_items', []);
+  const [loadingPDF, setLoadingPDF] = useState(false);
   
   // Accordion state - only one section open at a time
   const [openSection, setOpenSection] = useState<string | null>('business');
@@ -51,7 +55,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
     dueDate: '',
     paymentDate: '',
     paymentMethod: '',
-    currency: 'NGN', // Default to NGN
+    currency: 'NGN',
     items: [{ id: '1', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discount: 0 }],
     notes: '',
     terms: '',
@@ -62,11 +66,6 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
     watermarkOpacity: 20,
     watermarkDensity: 30,
   });
-
-  // Update preview whenever form data changes
-  useEffect(() => {
-    onDataChange({ ...formData, colorScheme });
-  }, [formData, colorScheme, onDataChange]);
 
   // Load profile data into form when available
   useEffect(() => {
@@ -84,15 +83,56 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
     }
   }, [profileData]);
 
+  // Load draft and client data when available
+  useEffect(() => {
+    if (draftData && !loading) {
+      setFormData(prev => ({
+        ...prev,
+        invoiceNumber: draftData.invoiceNumber,
+        invoiceDate: draftData.invoiceDate,
+        dueDate: draftData.dueDate,
+        paymentDate: draftData.paymentDate || '',
+        paymentMethod: draftData.paymentMethod || '',
+        currency: draftData.currency,
+        notes: draftData.notes,
+        terms: draftData.terms,
+        amountPaid: draftData.amountPaid || 0,
+        items: draftData.items,
+      }));
+    }
+  }, [draftData, loading]);
+
+  useEffect(() => {
+    if (clientData) {
+      setFormData(prev => ({
+        ...prev,
+        clientName: clientData.name,
+        clientAddress: clientData.address,
+        clientPhone: clientData.phone,
+        clientEmail: clientData.email,
+      }));
+    }
+  }, [clientData]);
+
+  // Load items from localStorage on mount
+  useEffect(() => {
+    if (localItems.length > 0 && (!draftData || draftData.items.length === 1 && !draftData.items[0].description)) {
+      setFormData(prev => ({ ...prev, items: localItems }));
+    }
+  }, [localItems, draftData]);
+
+  // Update preview whenever form data changes
+  useEffect(() => {
+    onDataChange({ ...formData, colorScheme });
+  }, [formData, colorScheme, onDataChange]);
+
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section);
   };
 
   const handleBusinessFieldChange = async (field: string, value: string) => {
-    // Update form data immediately
     setFormData(prev => ({ ...prev, [field]: value }));
     
-    // Debounced save to database
     const dbField = field === 'businessName' ? 'business_name' :
                    field === 'businessLogo' ? 'business_logo' :
                    field === 'businessAddress' ? 'business_address' :
@@ -107,10 +147,27 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
     }
   };
 
+  const handleDraftFieldChange = (field: keyof typeof draftData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (draftData) {
+      saveDraftData({ [field]: value } as any);
+    }
+  };
+
+  const handleClientFieldChange = (field: keyof typeof clientData, value: string) => {
+    setFormData(prev => ({ ...prev, [`client${field.charAt(0).toUpperCase() + field.slice(1)}`]: value }));
+    if (clientData) {
+      saveClientData({ [field]: value } as any);
+    }
+  };
+
   const handleCurrencyChange = async (value: string) => {
     setFormData(prev => ({ ...prev, currency: value }));
     try {
       await updateProfile({ default_currency: value });
+      if (draftData) {
+        saveDraftData({ currency: value });
+      }
     } catch (error) {
       console.error('Failed to save currency:', error);
     }
@@ -137,28 +194,34 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
       taxRate: 0,
       discount: 0,
     };
-    setFormData(prev => ({
-      ...prev,
-      items: [...prev.items, newItem],
-    }));
+    const updatedItems = [...formData.items, newItem];
+    setFormData(prev => ({ ...prev, items: updatedItems }));
+    setLocalItems(updatedItems);
+    if (draftData) {
+      saveDraftData({ items: updatedItems });
+    }
   };
 
   const removeItem = (id: string) => {
     if (formData.items.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        items: prev.items.filter(item => item.id !== id),
-      }));
+      const updatedItems = formData.items.filter(item => item.id !== id);
+      setFormData(prev => ({ ...prev, items: updatedItems }));
+      setLocalItems(updatedItems);
+      if (draftData) {
+        saveDraftData({ items: updatedItems });
+      }
     }
   };
 
   const updateItem = (id: string, field: keyof InvoiceItem, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      items: prev.items.map(item =>
-        item.id === id ? { ...item, [field]: value } : item
-      ),
-    }));
+    const updatedItems = formData.items.map(item =>
+      item.id === id ? { ...item, [field]: value } : item
+    );
+    setFormData(prev => ({ ...prev, items: updatedItems }));
+    setLocalItems(updatedItems);
+    if (draftData) {
+      saveDraftData({ items: updatedItems });
+    }
   };
 
   const handleSubmit = async () => {
@@ -171,7 +234,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
       return;
     }
 
-    setLoading(true);
+    setLoadingPDF(true);
     try {
       const invoiceData = {
         ...formData,
@@ -189,9 +252,13 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setLoadingPDF(false);
     }
   };
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-64">Loading...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -247,7 +314,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="businessPhone">Phone</Label>
                   <Input
@@ -304,7 +371,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                 <Input
                   id="clientName"
                   value={formData.clientName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, clientName: e.target.value }))}
+                  onChange={(e) => handleClientFieldChange('name', e.target.value)}
                   placeholder="Client Name"
                   className="mt-1"
                 />
@@ -315,20 +382,20 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                 <Textarea
                   id="clientAddress"
                   value={formData.clientAddress}
-                  onChange={(e) => setFormData(prev => ({ ...prev, clientAddress: e.target.value }))}
+                  onChange={(e) => handleClientFieldChange('address', e.target.value)}
                   placeholder="Client Address"
                   rows={3}
                   className="mt-1"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="clientPhone">Phone</Label>
                   <Input
                     id="clientPhone"
                     value={formData.clientPhone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, clientPhone: e.target.value }))}
+                    onChange={(e) => handleClientFieldChange('phone', e.target.value)}
                     placeholder="Phone Number"
                     className="mt-1"
                   />
@@ -339,7 +406,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                     id="clientEmail"
                     type="email"
                     value={formData.clientEmail}
-                    onChange={(e) => setFormData(prev => ({ ...prev, clientEmail: e.target.value }))}
+                    onChange={(e) => handleClientFieldChange('email', e.target.value)}
                     placeholder="client@example.com"
                     className="mt-1"
                   />
@@ -363,13 +430,13 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="invoiceNumber">Invoice Number</Label>
                   <Input
                     id="invoiceNumber"
                     value={formData.invoiceNumber}
-                    onChange={(e) => setFormData(prev => ({ ...prev, invoiceNumber: e.target.value }))}
+                    onChange={(e) => handleDraftFieldChange('invoiceNumber', e.target.value)}
                     placeholder="INV-001"
                     className="mt-1"
                   />
@@ -380,20 +447,20 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                     id="invoiceDate"
                     type="date"
                     value={formData.invoiceDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, invoiceDate: e.target.value }))}
+                    onChange={(e) => handleDraftFieldChange('invoiceDate', e.target.value)}
                     className="mt-1"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="dueDate">Due Date</Label>
                   <Input
                     id="dueDate"
                     type="date"
                     value={formData.dueDate}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
+                    onChange={(e) => handleDraftFieldChange('dueDate', e.target.value)}
                     className="mt-1"
                   />
                 </div>
@@ -443,7 +510,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                     />
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                     <div>
                       <Label>Quantity</Label>
                       <Input
@@ -531,7 +598,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                 <Textarea
                   id="notes"
                   value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  onChange={(e) => handleDraftFieldChange('notes', e.target.value)}
                   placeholder="Additional notes or comments"
                   rows={3}
                   className="mt-1"
@@ -542,7 +609,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                 <Textarea
                   id="terms"
                   value={formData.terms}
-                  onChange={(e) => setFormData(prev => ({ ...prev, terms: e.target.value }))}
+                  onChange={(e) => handleDraftFieldChange('terms', e.target.value)}
                   placeholder="Payment terms and conditions"
                   rows={3}
                   className="mt-1"
@@ -555,8 +622,8 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
 
       {/* Export Button */}
       <div className="pt-6">
-        <Button onClick={handleSubmit} disabled={loading} className="w-full h-12 text-lg">
-          {loading ? 'Generating PDF...' : 'Export PDF'}
+        <Button onClick={handleSubmit} disabled={loadingPDF} className="w-full h-12 text-lg">
+          {loadingPDF ? 'Generating PDF...' : 'Export PDF'}
           <Download className="ml-2 h-5 w-5" />
         </Button>
       </div>

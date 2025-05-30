@@ -26,7 +26,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onExportPDF }) => {
   };
 
   const handlePDFExport = async (data: InvoiceData) => {
-    // Create a print-specific version of the data
     const printData = {
       ...data,
       colorScheme,
@@ -36,7 +35,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onExportPDF }) => {
       watermarkDensity
     };
     
-    // Call the export function directly with the enhanced data
     await onExportPDF(printData);
   };
 
@@ -87,27 +85,40 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onExportPDF }) => {
           )}
         </div>
 
-        {/* Preview Section */}
+        {/* Preview Section - Mobile Responsive */}
         <div className="xl:sticky xl:top-6 h-fit">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 invoice-preview-container">
-            {previewData ? (
-              documentType === 'invoice' ? (
-                <InvoicePreview data={previewData} colorScheme={colorScheme} />
-              ) : (
-                <ReceiptPreview 
-                  data={previewData} 
-                  colorScheme={colorScheme}
-                  darkMode={darkMode}
-                  watermarkColor={watermarkColor}
-                  watermarkOpacity={watermarkOpacity}
-                  watermarkDensity={watermarkDensity}
-                />
-              )
-            ) : (
-              <div className="h-96 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                <p className="text-gray-500 dark:text-gray-400 text-lg">Fill out the form to see preview</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg invoice-preview-container">
+            {/* Mobile-optimized preview container */}
+            <div className="p-2 sm:p-4 lg:p-6">
+              <div className="w-full overflow-x-auto">
+                <div className="min-w-[300px] max-w-full">
+                  {previewData ? (
+                    documentType === 'invoice' ? (
+                      <div className="transform scale-75 sm:scale-90 lg:scale-100 origin-top-left">
+                        <InvoicePreview data={previewData} colorScheme={colorScheme} />
+                      </div>
+                    ) : (
+                      <div className="transform scale-75 sm:scale-90 lg:scale-100 origin-top-left">
+                        <ReceiptPreview 
+                          data={previewData} 
+                          colorScheme={colorScheme}
+                          darkMode={darkMode}
+                          watermarkColor={watermarkColor}
+                          watermarkOpacity={watermarkOpacity}
+                          watermarkDensity={watermarkDensity}
+                        />
+                      </div>
+                    )
+                  ) : (
+                    <div className="h-64 sm:h-80 lg:h-96 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                      <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base lg:text-lg text-center px-4">
+                        Fill out the form to see preview
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
