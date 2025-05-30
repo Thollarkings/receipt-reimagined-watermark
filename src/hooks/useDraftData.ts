@@ -33,6 +33,7 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
   const { toast } = useToast();
   const [draftData, setDraftData] = useState<DraftData | null>(null);
   const [clientData, setClientData] = useState<ClientData | null>(null);
+  const [sharedItems, setSharedItems] = useState<InvoiceItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Load draft and client data on mount
@@ -40,6 +41,7 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
     if (user) {
       loadDraftData();
       loadClientData();
+      loadSharedItems();
     }
   }, [user, documentType]);
 
@@ -61,23 +63,6 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
       }
 
       if (draft) {
-        // Load items for this draft
-        const { data: items, error: itemsError } = await supabase
-          .from('invoice_items')
-          .select('*')
-          .eq('invoice_draft_id', draft.id);
-
-        if (itemsError) throw itemsError;
-
-        const formattedItems: InvoiceItem[] = items?.map(item => ({
-          id: item.id,
-          description: item.description,
-          quantity: Number(item.quantity),
-          unitPrice: Number(item.unit_price),
-          taxRate: Number(item.tax_rate),
-          discount: Number(item.discount),
-        })) || [];
-
         setDraftData({
           id: draft.id,
           type: draft.type as 'invoice' | 'receipt',
@@ -90,9 +75,7 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
           notes: draft.notes || '',
           terms: draft.terms || '',
           amountPaid: Number(draft.amount_paid) || 0,
-          items: formattedItems.length > 0 ? formattedItems : [
-            { id: '1', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discount: 0 }
-          ],
+          items: [], // Will be loaded from shared items
         });
       } else {
         // Create default draft
@@ -107,7 +90,7 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
           notes: '',
           terms: '',
           amountPaid: 0,
-          items: [{ id: '1', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discount: 0 }],
+          items: [],
         });
       }
     } catch (error) {
@@ -121,6 +104,7 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
     if (!user) return;
 
     try {
+      // Load the most recent client regardless of document type
       const { data: client, error } = await supabase
         .from('clients')
         .select('*')
@@ -151,6 +135,22 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
       }
     } catch (error) {
       console.error('Error loading client data:', error);
+    }
+  };
+
+  const loadSharedItems = () => {
+    // Load items from localStorage that are shared between invoice and receipt
+    const savedItems = localStorage.getItem('shared_invoice_items');
+    if (savedItems) {
+      try {
+        const items = JSON.parse(savedItems);
+        setSharedItems(items);
+      } catch (error) {
+        console.error('Error parsing saved items:', error);
+        setSharedItems([{ id: '1', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discount: 0 }]);
+      }
+    } else {
+      setSharedItems([{ id: '1', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discount: 0 }]);
     }
   };
 
@@ -195,31 +195,6 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
         draftId = newDraft.id;
         setDraftData(prev => prev ? { ...prev, id: draftId } : null);
       }
-
-      // Save items
-      if (updatedData.items && draftId) {
-        // Delete existing items
-        await supabase
-          .from('invoice_items')
-          .delete()
-          .eq('invoice_draft_id', draftId);
-
-        // Insert new items
-        const itemsPayload = updatedData.items.map(item => ({
-          invoice_draft_id: draftId,
-          description: item.description,
-          quantity: item.quantity,
-          unit_price: item.unitPrice,
-          tax_rate: item.taxRate,
-          discount: item.discount,
-        }));
-
-        const { error: itemsError } = await supabase
-          .from('invoice_items')
-          .insert(itemsPayload);
-
-        if (itemsError) throw itemsError;
-      }
     } catch (error) {
       console.error('Error saving draft data:', error);
     }
@@ -262,6 +237,11 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
     }
   };
 
+  const saveSharedItems = (items: InvoiceItem[]) => {
+    setSharedItems(items);
+    localStorage.setItem('shared_invoice_items', JSON.stringify(items));
+  };
+
   // Auto-save with debouncing
   const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
 
@@ -288,9 +268,11 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
   return {
     draftData,
     clientData,
+    sharedItems,
     loading,
     saveDraftData: debouncedSaveDraft,
     saveClientData: debouncedSaveClient,
+    saveSharedItems,
     setDraftData,
     setClientData,
   };
