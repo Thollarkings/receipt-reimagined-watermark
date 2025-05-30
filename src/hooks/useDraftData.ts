@@ -17,7 +17,6 @@ interface DraftData {
   notes: string;
   terms: string;
   amountPaid?: number;
-  items: InvoiceItem[];
 }
 
 interface ClientData {
@@ -36,14 +35,55 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
   const [sharedItems, setSharedItems] = useState<InvoiceItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load draft and client data on mount
+  // Load draft, client data, and shared items on mount
   useEffect(() => {
     if (user) {
       loadDraftData();
-      loadClientData();
+      loadSharedClientData();
       loadSharedItems();
     }
   }, [user, documentType]);
+
+  // Real-time sync for shared data changes
+  useEffect(() => {
+    if (!user) return;
+
+    // Listen for client data changes
+    const clientChannel = supabase
+      .channel('client-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'clients',
+          filter: `user_id=eq.${user.id}`
+        },
+        () => {
+          loadSharedClientData();
+        }
+      )
+      .subscribe();
+
+    // Listen for localStorage changes (for items)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'shared_invoice_items' && e.newValue) {
+        try {
+          const items = JSON.parse(e.newValue);
+          setSharedItems(items);
+        } catch (error) {
+          console.error('Error parsing shared items:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      supabase.removeChannel(clientChannel);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [user]);
 
   const loadDraftData = async () => {
     if (!user) return;
@@ -75,7 +115,6 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
           notes: draft.notes || '',
           terms: draft.terms || '',
           amountPaid: Number(draft.amount_paid) || 0,
-          items: [], // Will be loaded from shared items
         });
       } else {
         // Create default draft
@@ -90,7 +129,6 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
           notes: '',
           terms: '',
           amountPaid: 0,
-          items: [],
         });
       }
     } catch (error) {
@@ -100,11 +138,11 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
     }
   };
 
-  const loadClientData = async () => {
+  const loadSharedClientData = async () => {
     if (!user) return;
 
     try {
-      // Load the most recent client regardless of document type
+      // Load the most recent client regardless of document type - this ensures sharing
       const { data: client, error } = await supabase
         .from('clients')
         .select('*')
@@ -200,7 +238,7 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
     }
   };
 
-  const saveClientData = async (data: Partial<ClientData>) => {
+  const saveSharedClientData = async (data: Partial<ClientData>) => {
     if (!user || !clientData) return;
 
     try {
@@ -232,6 +270,12 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
         if (error) throw error;
         setClientData(prev => prev ? { ...prev, id: newClient.id } : null);
       }
+
+      // Trigger storage event to sync across tabs/components
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'client_data_updated',
+        newValue: JSON.stringify(updatedClient)
+      }));
     } catch (error) {
       console.error('Error saving client data:', error);
     }
@@ -240,6 +284,12 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
   const saveSharedItems = (items: InvoiceItem[]) => {
     setSharedItems(items);
     localStorage.setItem('shared_invoice_items', JSON.stringify(items));
+    
+    // Trigger storage event to sync across tabs/components
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'shared_invoice_items',
+      newValue: JSON.stringify(items)
+    }));
   };
 
   // Auto-save with debouncing
@@ -260,7 +310,7 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
       clearTimeout(saveTimeout);
     }
     const timeout = setTimeout(() => {
-      saveClientData(data);
+      saveSharedClientData(data);
     }, 1000);
     setSaveTimeout(timeout);
   };

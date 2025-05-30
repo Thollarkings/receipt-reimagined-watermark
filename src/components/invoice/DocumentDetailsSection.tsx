@@ -12,7 +12,7 @@ interface DocumentDetailsSectionProps {
   isOpen: boolean;
   onToggle: () => void;
   formData: any;
-  onFieldChange: (field: string, value: string) => void;
+  onFieldChange: (field: string, value: string | number) => void;
   onCurrencyChange: (value: string) => void;
 }
 
@@ -23,13 +23,16 @@ export const DocumentDetailsSection: React.FC<DocumentDetailsSectionProps> = ({
   onFieldChange,
   onCurrencyChange,
 }) => {
+  const isReceipt = formData.type === 'receipt';
+  const documentTitle = isReceipt ? 'Receipt Details' : 'Invoice Details';
+
   return (
     <Collapsible open={isOpen} onOpenChange={onToggle}>
       <Card className='bg-gradient-to-r from-fuchsia-200 to-violet-300'>
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <CardTitle className="flex items-center justify-between">
-              Invoice Details
+              {documentTitle}
               {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
             </CardTitle>
           </CardHeader>
@@ -38,17 +41,21 @@ export const DocumentDetailsSection: React.FC<DocumentDetailsSectionProps> = ({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="invoiceNumber">Invoice Number</Label>
+                <Label htmlFor="invoiceNumber">
+                  {isReceipt ? 'Receipt Number' : 'Invoice Number'}
+                </Label>
                 <Input
                   id="invoiceNumber"
                   value={formData.invoiceNumber}
                   onChange={(e) => onFieldChange('invoiceNumber', e.target.value)}
-                  placeholder="INV-001"
+                  placeholder={isReceipt ? 'REC-001' : 'INV-001'}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="invoiceDate">Invoice Date</Label>
+                <Label htmlFor="invoiceDate">
+                  {isReceipt ? 'Receipt Date' : 'Invoice Date'}
+                </Label>
                 <Input
                   id="invoiceDate"
                   type="date"
@@ -60,16 +67,44 @@ export const DocumentDetailsSection: React.FC<DocumentDetailsSectionProps> = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="dueDate">Due Date</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => onFieldChange('dueDate', e.target.value)}
-                  className="mt-1"
-                />
-              </div>
+              {!isReceipt && (
+                <div>
+                  <Label htmlFor="dueDate">Due Date</Label>
+                  <Input
+                    id="dueDate"
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e) => onFieldChange('dueDate', e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              )}
+              
+              {isReceipt && (
+                <>
+                  <div>
+                    <Label htmlFor="paymentDate">Payment Date</Label>
+                    <Input
+                      id="paymentDate"
+                      type="date"
+                      value={formData.paymentDate}
+                      onChange={(e) => onFieldChange('paymentDate', e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="paymentMethod">Payment Method</Label>
+                    <Input
+                      id="paymentMethod"
+                      value={formData.paymentMethod}
+                      onChange={(e) => onFieldChange('paymentMethod', e.target.value)}
+                      placeholder="Credit Card, Cash, etc."
+                      className="mt-1"
+                    />
+                  </div>
+                </>
+              )}
+              
               <div>
                 <Label htmlFor="currency">Currency</Label>
                 <Select value={formData.currency} onValueChange={onCurrencyChange}>
@@ -86,6 +121,22 @@ export const DocumentDetailsSection: React.FC<DocumentDetailsSectionProps> = ({
                 </Select>
               </div>
             </div>
+
+            {isReceipt && (
+              <div>
+                <Label htmlFor="amountPaid">Amount Paid</Label>
+                <Input
+                  id="amountPaid"
+                  type="number"
+                  value={formData.amountPaid}
+                  onChange={(e) => onFieldChange('amountPaid', Number(e.target.value))}
+                  placeholder="Amount Paid"
+                  className="mt-1"
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+            )}
           </CardContent>
         </CollapsibleContent>
       </Card>
