@@ -14,9 +14,9 @@ export const DocumentTypeSelector: React.FC<DocumentTypeSelectorProps> = ({
   onTypeChange,
 }) => {
   return (
-    <Card>
+    <Card className="bg-gradient-to-r from-fuchsia-200 to-violet-300">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 ">
           <FileText className="h-5 w-5" />
           Document Type
         </CardTitle>

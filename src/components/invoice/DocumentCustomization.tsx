@@ -61,7 +61,7 @@ export const DocumentCustomization: React.FC<DocumentCustomizationProps> = ({
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card>
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+          <CardHeader className="bg-gradient-to-r from-fuchsia-200 to-violet-300 cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-800 transition-colors">
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Palette className="h-5 w-5" />
@@ -72,7 +72,7 @@ export const DocumentCustomization: React.FC<DocumentCustomizationProps> = ({
           </CardHeader>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 bg-indigo-100">
             <div>
               <Label className="text-base font-medium mb-3 block">Color Scheme</Label>
               <div className="grid grid-cols-7 gap-3">

@@ -197,7 +197,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
     <div className="space-y-6">
       {/* Business Information */}
       <Collapsible open={openSection === 'business'} onOpenChange={() => toggleSection('business')}>
-        <Card>
+        <Card className='bg-gradient-to-r from-fuchsia-200 to-violet-300'>
           <CollapsibleTrigger asChild>
             <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               <CardTitle className="flex items-center justify-between">
@@ -288,7 +288,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
 
       {/* Client Information */}
       <Collapsible open={openSection === 'client'} onOpenChange={() => toggleSection('client')}>
-        <Card>
+        <Card className='bg-gradient-to-r from-fuchsia-200 to-violet-300'>
           <CollapsibleTrigger asChild>
             <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               <CardTitle className="flex items-center justify-between">
@@ -352,7 +352,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
 
       {/* Receipt Details */}
       <Collapsible open={openSection === 'details'} onOpenChange={() => toggleSection('details')}>
-        <Card>
+        <Card className='bg-gradient-to-r from-fuchsia-200 to-violet-300'>
           <CollapsibleTrigger asChild>
             <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               <CardTitle className="flex items-center justify-between">
@@ -444,7 +444,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
 
       {/* Items */}
       <Collapsible open={openSection === 'items'} onOpenChange={() => toggleSection('items')}>
-        <Card>
+        <Card className='bg-gradient-to-r from-fuchsia-200 to-violet-300'>
           <CollapsibleTrigger asChild>
             <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               <CardTitle className="flex items-center justify-between">
@@ -539,7 +539,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
 
       {/* Notes */}
       <Collapsible open={openSection === 'notes'} onOpenChange={() => toggleSection('notes')}>
-        <Card>
+        <Card className='bg-gradient-to-r from-fuchsia-200 to-violet-300'>
           <CollapsibleTrigger asChild>
             <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               <CardTitle className="flex items-center justify-between">

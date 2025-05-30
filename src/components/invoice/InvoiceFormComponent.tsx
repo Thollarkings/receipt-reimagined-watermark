@@ -197,7 +197,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
     <div className="space-y-6">
       {/* Business Information */}
       <Collapsible open={openSection === 'business'} onOpenChange={() => toggleSection('business')}>
-        <Card>
+        <Card className='bg-gradient-to-r from-fuchsia-200 to-violet-300'>
           <CollapsibleTrigger asChild>
             <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               <CardTitle className="flex items-center justify-between">
@@ -215,7 +215,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                   value={formData.businessName}
                   onChange={(e) => handleBusinessFieldChange('businessName', e.target.value)}
                   placeholder="Your Business Name"
-                  className="mt-1"
+                  className="mt-1 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
                 />
               </div>
 
@@ -227,7 +227,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                     type="file"
                     accept="image/*"
                     onChange={handleLogoUpload}
-                    className="flex-1"
+                    className="flex-1 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
                   />
                   {formData.businessLogo && (
                     <img src={formData.businessLogo} alt="Logo" className="h-12 w-12 object-contain border rounded" />
@@ -243,7 +243,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
                   onChange={(e) => handleBusinessFieldChange('businessAddress', e.target.value)}
                   placeholder="Your business address"
                   rows={3}
-                  className="mt-1"
+                  className="mt-1 bg-gray-200"
                 />
               </div>
 
@@ -288,7 +288,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
 
       {/* Client Information */}
       <Collapsible open={openSection === 'client'} onOpenChange={() => toggleSection('client')}>
-        <Card>
+        <Card className='bg-gradient-to-r from-fuchsia-200 to-violet-300'>
           <CollapsibleTrigger asChild>
             <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               <CardTitle className="flex items-center justify-between">
@@ -352,7 +352,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
 
       {/* Document Details */}
       <Collapsible open={openSection === 'details'} onOpenChange={() => toggleSection('details')}>
-        <Card>
+        <Card className='bg-gradient-to-r from-fuchsia-200 to-violet-300'>
           <CollapsibleTrigger asChild>
             <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               <CardTitle className="flex items-center justify-between">
@@ -420,7 +420,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
 
       {/* Items */}
       <Collapsible open={openSection === 'items'} onOpenChange={() => toggleSection('items')}>
-        <Card>
+        <Card className='bg-gradient-to-r from-fuchsia-200 to-violet-300'>
           <CollapsibleTrigger asChild>
             <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               <CardTitle className="flex items-center justify-between">
@@ -515,7 +515,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
 
       {/* Notes and Terms */}
       <Collapsible open={openSection === 'notes'} onOpenChange={() => toggleSection('notes')}>
-        <Card>
+        <Card className='bg-gradient-to-r from-fuchsia-200 to-violet-300'>
           <CollapsibleTrigger asChild>
             <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
               <CardTitle className="flex items-center justify-between">
