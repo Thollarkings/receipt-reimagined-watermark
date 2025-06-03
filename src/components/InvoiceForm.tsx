@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { InvoiceData } from '@/types/invoice';
 import { DocumentTypeSelector } from '@/components/invoice/DocumentTypeSelector';
@@ -85,43 +84,60 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onExportPDF }) => {
           )}
         </div>
 
-        {/* Preview Section - Mobile Responsive */}
+        {/* Preview Section - Improved responsive layout */}
         <div className="xl:sticky xl:top-6 h-fit">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-            {/* Mobile-optimized preview container with the correct class */}
-            <div className="p-1 sm:p-2 md:p-4 lg:p-6 invoice-preview-container" data-preview-container>
-              <div className="w-full overflow-x-auto">
-                <div className="min-w-[280px] max-w-full">
-                  {previewData ? (
-                    documentType === 'invoice' ? (
-                      <div className="transform scale-50 sm:scale-65 md:scale-75 lg:scale-90 xl:scale-100 origin-top-left">
-                        <div className="w-[595px] h-[842px]">
-                          <InvoicePreview data={previewData} colorScheme={colorScheme} />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="transform scale-50 sm:scale-65 md:scale-75 lg:scale-90 xl:scale-100 origin-top-left">
-                        <div className="w-[595px] h-[842px]">
-                          <ReceiptPreview 
-                            data={previewData} 
-                            colorScheme={colorScheme}
-                            darkMode={darkMode}
-                            watermarkColor={watermarkColor}
-                            watermarkOpacity={watermarkOpacity}
-                            watermarkDensity={watermarkDensity}
-                          />
-                        </div>
-                      </div>
-                    )
-                  ) : (
-                    <div className="h-48 sm:h-64 md:h-80 lg:h-96 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                      <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm md:text-base lg:text-lg text-center px-4">
-                        Fill out the form to see preview
-                      </p>
-                    </div>
-                  )}
+            {/* Optimized preview container with better scaling */}
+            <div className="invoice-preview-container" data-preview-container>
+              {previewData ? (
+                <div className="w-auto h-auto flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-0 sm:p-0">
+  <div className="w-full h-full overflow-auto bg-white dark:bg-gray-800 rounded-lg shadow-md">
+    {documentType === 'invoice' ? (
+      <div 
+        className="w-full origin-top"
+        style={{
+          transform: 'scale(0.95)',
+          transformOrigin: 'top left',
+          width: 'auto',
+          margin: '0 auto'
+        }}
+      >
+        <div className="w-[650px] min-h-auto bg-white">
+          <InvoicePreview data={previewData} colorScheme={colorScheme} />
+        </div>
+      </div>
+    ) : (
+      <div 
+        className="w-auto origin-top"
+        style={{
+          transform: 'scale(0.9)',
+          transformOrigin: 'top left',
+          width: 'auto',
+          margin: '0 auto'
+        }}
+      >
+        <div className="w-[700px] h-auto bg-white">
+          <ReceiptPreview 
+            data={previewData} 
+            colorScheme={colorScheme}
+            darkMode={darkMode}
+            watermarkColor={watermarkColor}
+            watermarkOpacity={watermarkOpacity}
+            watermarkDensity={watermarkDensity}
+          />
+        </div>
+      </div>
+    )}
+  </div>
+</div>
+
+              ) : (
+                <div className="h-48 sm:h-64 md:h-80 lg:h-96 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center m-4">
+                  <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm md:text-base lg:text-lg text-center px-4">
+                    Fill out the form to see preview
+                  </p>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

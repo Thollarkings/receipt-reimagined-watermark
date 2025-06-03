@@ -342,7 +342,7 @@ const ReceiptForm = () => {
               <CollapsibleTrigger asChild>
                 <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                   <CardTitle className="flex items-center justify-between">
-                    Business Information ttt
+                    Business Information
                     {businessOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                   </CardTitle>
                 </CardHeader>
