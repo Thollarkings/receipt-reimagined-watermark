@@ -53,7 +53,6 @@ export const generatePDF = async (data: InvoiceData): Promise<void> => {
       allowTaint: true,
       backgroundColor: '#ffffff',
       width: 794,
-      height: 1123, // A4 height in pixels
       scrollX: 0,
       scrollY: 0,
       logging: false
@@ -64,27 +63,39 @@ export const generatePDF = async (data: InvoiceData): Promise<void> => {
     // Remove temporary container
     document.body.removeChild(tempContainer);
 
-    // Create PDF
-    const imgData = canvas.toDataURL('image/png');
+    // Create PDF with proper dimensions
     const pdf = new jsPDF('p', 'mm', 'a4');
     
+    const imgData = canvas.toDataURL('image/png');
     const imgWidth = 210; // A4 width in mm
     const pageHeight = 297; // A4 height in mm
+    
+    // Calculate the height of the image when scaled to fit the PDF width
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    
+    console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
+    console.log('PDF image dimensions:', imgWidth, 'x', imgHeight);
+    console.log('Page height:', pageHeight);
+
     let heightLeft = imgHeight;
     let position = 0;
+    let pageCount = 0;
 
-    // Add first page
+    // Add the first page
     pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    pageCount++;
     heightLeft -= pageHeight;
 
-    // Add additional pages if needed
-    while (heightLeft >= 0) {
+    // Add additional pages only if there's remaining content
+    while (heightLeft > 0) {
       position = heightLeft - imgHeight;
       pdf.addPage();
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      pageCount++;
       heightLeft -= pageHeight;
     }
+
+    console.log('Total pages generated:', pageCount);
 
     // Download the PDF
     const filename = `${data.type}-${data.invoiceNumber || 'document'}.pdf`;
