@@ -88,8 +88,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({ onExportPDF }) => {
         {/* Preview Section - Mobile Responsive */}
         <div className="xl:sticky xl:top-6 h-fit">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-            {/* Mobile-optimized preview container */}
-            <div className="p-1 sm:p-2 md:p-4 lg:p-6">
+            {/* Mobile-optimized preview container with the correct class */}
+            <div className="p-1 sm:p-2 md:p-4 lg:p-6 invoice-preview-container" data-preview-container>
               <div className="w-full overflow-x-auto">
                 <div className="min-w-[280px] max-w-full">
                   {previewData ? (
