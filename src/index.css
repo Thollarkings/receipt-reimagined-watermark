@@ -157,7 +157,7 @@
   /* Ensure colors are preserved in print */
   * {
     -webkit-print-color-adjust: exact !important;
-    color-adjust: exact !important;
+    print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
   
@@ -169,7 +169,7 @@
   /* Ensure watermarks print correctly */
   .watermark-diagonal {
     -webkit-print-color-adjust: exact !important;
-    color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
 
