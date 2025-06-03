@@ -67,30 +67,44 @@ export const generatePDF = async (data: InvoiceData): Promise<void> => {
     const pdf = new jsPDF('p', 'mm', 'a4');
     
     const imgData = canvas.toDataURL('image/png');
-    const imgWidth = 210; // A4 width in mm
-    const pageHeight = 297; // A4 height in mm
+    const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm for A4
+    const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm for A4
     
-    // Calculate the height of the image when scaled to fit the PDF width
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    // Original content dimensions in pixels, converted to mm (assuming 96 DPI)
+    const contentWidthMM = (canvas.width * 25.4) / 96; // Convert pixels to mm
+    const contentHeightMM = (canvas.height * 25.4) / 96; // Convert pixels to mm
     
-    console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
-    console.log('PDF image dimensions:', imgWidth, 'x', imgHeight);
-    console.log('Page height:', pageHeight);
+    // Calculate uniform scale factor to fit page width while maintaining aspect ratio
+    const scale = Math.min(pageWidth / contentWidthMM, pageHeight / contentHeightMM);
+    
+    // Calculate scaled dimensions
+    const scaledWidth = contentWidthMM * scale;
+    const scaledHeight = contentHeightMM * scale;
+    
+    // Calculate horizontal offset to center content
+    const offsetX = (pageWidth - scaledWidth) / 2;
+    const offsetY = 0; // Top aligned, vertical white space below is acceptable
+    
+    console.log('Original content dimensions (mm):', contentWidthMM, 'x', contentHeightMM);
+    console.log('Page dimensions (mm):', pageWidth, 'x', pageHeight);
+    console.log('Scale factor:', scale);
+    console.log('Scaled dimensions (mm):', scaledWidth, 'x', scaledHeight);
+    console.log('Horizontal offset (mm):', offsetX);
 
-    let heightLeft = imgHeight;
-    let position = 0;
+    let heightLeft = scaledHeight;
+    let position = offsetY;
     let pageCount = 0;
 
-    // Add the first page
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    // Add the first page with centered content
+    pdf.addImage(imgData, 'PNG', offsetX, position, scaledWidth, scaledHeight);
     pageCount++;
     heightLeft -= pageHeight;
 
     // Add additional pages only if there's remaining content
     while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
+      position = heightLeft - scaledHeight;
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'PNG', offsetX, position, scaledWidth, scaledHeight);
       pageCount++;
       heightLeft -= pageHeight;
     }
