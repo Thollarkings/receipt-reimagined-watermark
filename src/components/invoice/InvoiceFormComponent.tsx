@@ -135,6 +135,10 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
     saveDraftData({ [field]: value } as any);
   };
 
+  const handleCurrencyChange = (value: string) => {
+    handleDocumentDetailsChange('currency', value);
+  };
+
   const addItem = () => {
     const newItem: InvoiceItem = {
       id: Date.now().toString(),
@@ -288,7 +292,7 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
         onToggle={() => {}}
         formData={invoiceData}
         onFieldChange={handleDocumentDetailsChange}
-        onCurrencyChange={handleDocumentDetailsChange}
+        onCurrencyChange={handleCurrencyChange}
       />
 
       <ItemsSection
