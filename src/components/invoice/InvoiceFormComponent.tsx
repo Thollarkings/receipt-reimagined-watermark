@@ -226,42 +226,6 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Invoice Details</h2>
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <div className="flex-1 sm:w-64">
-            <EmailInputSection
-              email={clientEmail}
-              onEmailChange={setClientEmail}
-              placeholder="Enter client's email address"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleSendEmail}
-              disabled={isSending || !clientEmail.trim()}
-              className="gap-2 bg-green-600 hover:bg-green-700"
-            >
-              {isSending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Mail className="h-4 w-4" />
-                  Send to Client
-                </>
-              )}
-            </Button>
-            <Button onClick={handleExportPDF} className="gap-2">
-              <Download className="h-4 w-4" />
-              Export PDF
-            </Button>
-          </div>
-        </div>
-      </div>
-
       <BusinessInfoSection
         isOpen={true}
         onToggle={() => {}}
@@ -314,6 +278,43 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
         notes={invoiceData.terms}
         onNotesChange={handleTermsChange}
       />
+
+      {/* Repositioned header section with updated colors */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 bg-card border border-border rounded-lg">
+        <h2 className="text-2xl font-bold text-foreground">Invoice Details</h2>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="flex-1 sm:w-64">
+            <EmailInputSection
+              email={clientEmail}
+              onEmailChange={setClientEmail}
+              placeholder="Enter client's email address"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleSendEmail}
+              disabled={isSending || !clientEmail.trim()}
+              className="gap-2 bg-primary hover:bg-primary/90"
+            >
+              {isSending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4" />
+                  Send to Client
+                </>
+              )}
+            </Button>
+            <Button onClick={handleExportPDF} className="gap-2 bg-secondary hover:bg-secondary/80">
+              <Download className="h-4 w-4" />
+              Export PDF
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
