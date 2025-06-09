@@ -1,17 +1,16 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { InvoiceData, InvoiceItem } from '@/types/invoice';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfileData } from '@/hooks/useProfileData';
-import { useDraftData } from '@/hooks/useDraftData';
+import { Download, Mail, Loader2 } from 'lucide-react';
 import { BusinessInfoSection } from '@/components/invoice/BusinessInfoSection';
 import { ClientInfoSection } from '@/components/invoice/ClientInfoSection';
 import { DocumentDetailsSection } from '@/components/invoice/DocumentDetailsSection';
 import { ItemsSection } from '@/components/invoice/ItemsSection';
 import { NotesSection } from '@/components/invoice/NotesSection';
+import { EmailInputSection } from '@/components/invoice/EmailInputSection';
+import { InvoiceData } from '@/types/invoice';
+import { useDraftData } from '@/hooks/useDraftData';
+import { useEmailSending } from '@/hooks/useEmailSending';
+import { generatePDF } from '@/utils/pdfGenerator';
 
 interface ReceiptFormComponentProps {
   onExportPDF: (data: InvoiceData) => Promise<void>;
@@ -23,21 +22,19 @@ interface ReceiptFormComponentProps {
   watermarkDensity: number;
 }
 
-export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({ 
-  onExportPDF, 
-  onDataChange, 
+export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
+  onExportPDF,
+  onDataChange,
   colorScheme,
   darkMode,
   watermarkColor,
   watermarkOpacity,
   watermarkDensity
 }) => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const { profileData, updateProfile } = useProfileData();
-  const { draftData, clientData, sharedItems, loading, saveDraftData, saveClientData, saveSharedItems, setDraftData, setClientData } = useDraftData('receipt');
-  const [loadingPDF, setLoadingPDF] = useState(false);
-  
+  const { draftData, clientData, sharedItems, loading, saveDraftData, saveClientData, saveSharedItems } = useDraftData('receipt');
+  const { sendInvoiceEmail, isSending } = useEmailSending();
+  const [clientEmail, setClientEmail] = useState('');
+
   // Accordion state - only one section open at a time
   const [openSection, setOpenSection] = useState<string | null>('business');
   
@@ -262,12 +259,69 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
     }
   };
 
+  const handleSendEmail = async () => {
+    if (!clientEmail.trim()) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      // Generate PDF without saving to file
+      const pdfDataUrl = await generatePDF(receiptData, false);
+      
+      // Send email with PDF attachment
+      await sendInvoiceEmail(receiptData, pdfDataUrl, clientEmail);
+    } catch (error) {
+      console.error('Error sending email:', error);
+    }
+  };
+
   if (loading) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Receipt Details</h2>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="flex-1 sm:w-64">
+            <EmailInputSection
+              email={clientEmail}
+              onEmailChange={setClientEmail}
+              placeholder="Enter client's email address"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleSendEmail}
+              disabled={isSending || !clientEmail.trim()}
+              className="gap-2 bg-green-600 hover:bg-green-700"
+            >
+              {isSending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4" />
+                  Send to Client
+                </>
+              )}
+            </Button>
+            <Button onClick={handleExportPDF} className="gap-2">
+              <Download className="h-4 w-4" />
+              Export PDF
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <BusinessInfoSection
         isOpen={openSection === 'business'}
         onToggle={() => toggleSection('business')}
@@ -306,14 +360,6 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
         formData={formData}
         onFieldChange={handleDraftFieldChange}
       />
-
-      {/* Export Button */}
-      <div className="pt-6">
-        <Button onClick={handleSubmit} disabled={loadingPDF} className="w-full h-12 text-lg">
-          {loadingPDF ? 'Generating PDF...' : 'Export PDF'}
-          <Download className="ml-2 h-5 w-5" />
-        </Button>
-      </div>
     </div>
   );
 };

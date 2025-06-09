@@ -1,17 +1,16 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { InvoiceData, InvoiceItem } from '@/types/invoice';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfileData } from '@/hooks/useProfileData';
-import { useDraftData } from '@/hooks/useDraftData';
+import { Download, Mail, Loader2 } from 'lucide-react';
 import { BusinessInfoSection } from './BusinessInfoSection';
 import { ClientInfoSection } from './ClientInfoSection';
 import { DocumentDetailsSection } from './DocumentDetailsSection';
 import { ItemsSection } from './ItemsSection';
 import { NotesSection } from './NotesSection';
+import { EmailInputSection } from './EmailInputSection';
+import { InvoiceData, InvoiceItem } from '@/types/invoice';
+import { useDraftData } from '@/hooks/useDraftData';
+import { useEmailSending } from '@/hooks/useEmailSending';
+import { generatePDF } from '@/utils/pdfGenerator';
 
 interface InvoiceFormComponentProps {
   onExportPDF: (data: InvoiceData) => Promise<void>;
@@ -19,22 +18,16 @@ interface InvoiceFormComponentProps {
   colorScheme: string;
 }
 
-export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ 
-  onExportPDF, 
-  onDataChange, 
-  colorScheme 
+export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
+  onExportPDF,
+  onDataChange,
+  colorScheme
 }) => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const { profileData, updateProfile } = useProfileData();
-  const { draftData, clientData, sharedItems, loading, saveDraftData, saveClientData, saveSharedItems, setDraftData, setClientData } = useDraftData('invoice');
-  const [loadingPDF, setLoadingPDF] = useState(false);
-  
-  // Accordion state - only one section open at a time
-  const [openSection, setOpenSection] = useState<string | null>('business');
-  
-  const [formData, setFormData] = useState<InvoiceData>({
-    id: '',
+  const { draftData, clientData, sharedItems, loading, saveDraftData, saveClientData, saveSharedItems } = useDraftData('invoice');
+  const { sendInvoiceEmail, isSending } = useEmailSending();
+  const [clientEmail, setClientEmail] = useState('');
+
+  const [invoiceData, setInvoiceData] = useState<InvoiceData>({
     type: 'invoice',
     businessName: '',
     businessLogo: '',
@@ -46,254 +39,197 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
     clientAddress: '',
     clientPhone: '',
     clientEmail: '',
-    invoiceNumber: `INV-${Date.now()}`,
-    invoiceDate: new Date().toISOString().split('T')[0],
-    dueDate: '',
-    paymentDate: '',
-    paymentMethod: '',
-    currency: 'NGN',
-    items: [{ id: '1', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discount: 0 }],
-    notes: '',
-    terms: '',
-    amountPaid: 0,
-    colorScheme: colorScheme,
-    darkMode: false,
-    watermarkColor: '#9ca3af',
-    watermarkOpacity: 20,
-    watermarkDensity: 30,
+    invoiceNumber: draftData?.invoiceNumber || `INV-${Date.now()}`,
+    invoiceDate: draftData?.invoiceDate || new Date().toISOString().split('T')[0],
+    dueDate: draftData?.dueDate || '',
+    currency: draftData?.currency || 'NGN',
+    items: sharedItems || [{ id: '1', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discount: 0 }],
+    notes: draftData?.notes || '',
+    terms: draftData?.terms || ''
   });
 
-  // Load profile data into form when available
   useEffect(() => {
-    if (profileData && Object.keys(profileData).length > 0) {
-      setFormData(prev => ({
+    if (draftData) {
+      setInvoiceData(prev => ({
         ...prev,
-        businessName: profileData.business_name || '',
-        businessLogo: profileData.business_logo || '',
-        businessAddress: profileData.business_address || '',
-        businessPhone: profileData.business_phone || '',
-        businessEmail: profileData.business_email || '',
-        businessWebsite: profileData.business_website || '',
-        currency: profileData.default_currency || 'NGN',
+        invoiceNumber: draftData.invoiceNumber || `INV-${Date.now()}`,
+        invoiceDate: draftData.invoiceDate || new Date().toISOString().split('T')[0],
+        dueDate: draftData.dueDate || '',
+        currency: draftData.currency || 'NGN',
+        notes: draftData.notes || '',
+        terms: draftData.terms || ''
       }));
     }
-  }, [profileData]);
-
-  // Load draft and client data when available
-  useEffect(() => {
-    if (draftData && !loading) {
-      setFormData(prev => ({
-        ...prev,
-        invoiceNumber: draftData.invoiceNumber,
-        invoiceDate: draftData.invoiceDate,
-        dueDate: draftData.dueDate,
-        paymentDate: draftData.paymentDate || '',
-        paymentMethod: draftData.paymentMethod || '',
-        currency: draftData.currency,
-        notes: draftData.notes,
-        terms: draftData.terms,
-        amountPaid: draftData.amountPaid || 0,
-      }));
-    }
-  }, [draftData, loading]);
+  }, [draftData]);
 
   useEffect(() => {
     if (clientData) {
-      setFormData(prev => ({
+      setInvoiceData(prev => ({
         ...prev,
-        clientName: clientData.name,
-        clientAddress: clientData.address,
-        clientPhone: clientData.phone,
-        clientEmail: clientData.email,
+        clientName: clientData.name || '',
+        clientAddress: clientData.address || '',
+        clientPhone: clientData.phone || '',
+        clientEmail: clientData.email || '',
       }));
     }
   }, [clientData]);
 
-  // Load shared items
   useEffect(() => {
-    if (sharedItems.length > 0) {
-      setFormData(prev => ({ ...prev, items: sharedItems }));
-    }
+    setInvoiceData(prev => ({
+      ...prev,
+      items: sharedItems || [{ id: '1', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discount: 0 }],
+    }));
   }, [sharedItems]);
 
-  // Update preview whenever form data changes
   useEffect(() => {
-    onDataChange({ ...formData, colorScheme });
-  }, [formData, colorScheme, onDataChange]);
+    onDataChange(invoiceData);
+  }, [invoiceData, onDataChange]);
 
-  const toggleSection = (section: string) => {
-    setOpenSection(openSection === section ? null : section);
+  const handleBusinessInfoChange = (field: string, value: string) => {
+    setInvoiceData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleBusinessFieldChange = async (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    const dbField = field === 'businessName' ? 'business_name' :
-                   field === 'businessLogo' ? 'business_logo' :
-                   field === 'businessAddress' ? 'business_address' :
-                   field === 'businessPhone' ? 'business_phone' :
-                   field === 'businessEmail' ? 'business_email' :
-                   field === 'businessWebsite' ? 'business_website' : field;
-    
-    try {
-      await updateProfile({ [dbField]: value });
-    } catch (error) {
-      console.error('Failed to save business data:', error);
+  const handleClientInfoChange = (field: string, value: string) => {
+    setInvoiceData(prev => ({ ...prev, [field]: value }));
+    saveClientData({ [field]: value });
+  };
+
+  const handleDocumentDetailsChange = (field: string, value: string) => {
+    setInvoiceData(prev => ({ ...prev, [field]: value }));
+    saveDraftData({ [field]: value });
+  };
+
+  const handleItemsChange = (items: InvoiceItem[]) => {
+    setInvoiceData(prev => ({ ...prev, items: items }));
+    saveSharedItems(items);
+  };
+
+  const handleNotesChange = (value: string) => {
+    setInvoiceData(prev => ({ ...prev, notes: value }));
+    saveDraftData({ notes: value });
+  };
+
+  const handleTermsChange = (value: string) => {
+    setInvoiceData(prev => ({ ...prev, terms: value }));
+    saveDraftData({ terms: value });
+  };
+
+  const handleExportPDF = async () => {
+    await onExportPDF(invoiceData);
+  };
+
+  // Update client email when clientData changes
+  useEffect(() => {
+    if (clientData?.email) {
+      setClientEmail(clientData.email);
     }
-  };
+  }, [clientData]);
 
-  const handleDraftFieldChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (draftData) {
-      saveDraftData({ [field]: value } as any);
-    }
-  };
-
-  const handleClientFieldChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [`client${field.charAt(0).toUpperCase() + field.slice(1)}`]: value }));
-    if (clientData) {
-      saveClientData({ [field]: value } as any);
-    }
-  };
-
-  const handleCurrencyChange = async (value: string) => {
-    setFormData(prev => ({ ...prev, currency: value }));
-    try {
-      await updateProfile({ default_currency: value });
-      if (draftData) {
-        saveDraftData({ currency: value });
-      }
-    } catch (error) {
-      console.error('Failed to save currency:', error);
-    }
-  };
-
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        handleBusinessFieldChange('businessLogo', result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const addItem = () => {
-    const newItem: InvoiceItem = {
-      id: Date.now().toString(),
-      description: '',
-      quantity: 1,
-      unitPrice: 0,
-      taxRate: 0,
-      discount: 0,
-    };
-    const updatedItems = [...formData.items, newItem];
-    setFormData(prev => ({ ...prev, items: updatedItems }));
-    saveSharedItems(updatedItems);
-  };
-
-  const removeItem = (id: string) => {
-    if (formData.items.length > 1) {
-      const updatedItems = formData.items.filter(item => item.id !== id);
-      setFormData(prev => ({ ...prev, items: updatedItems }));
-      saveSharedItems(updatedItems);
-    }
-  };
-
-  const updateItem = (id: string, field: keyof InvoiceItem, value: any) => {
-    const updatedItems = formData.items.map(item =>
-      item.id === id ? { ...item, [field]: value } : item
-    );
-    setFormData(prev => ({ ...prev, items: updatedItems }));
-    saveSharedItems(updatedItems);
-  };
-
-  const handleSubmit = async () => {
-    if (!formData.businessName || !formData.clientName) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in at least the business name and client name before exporting.",
-        variant: "destructive",
-      });
+  const handleSendEmail = async () => {
+    if (!clientEmail.trim()) {
+      alert('Please enter a valid email address');
       return;
     }
 
-    setLoadingPDF(true);
     try {
-      const invoiceData = {
-        ...formData,
-        colorScheme,
-        id: formData.id || `INV-${Date.now()}`,
-        invoiceNumber: formData.invoiceNumber || `INV-${Date.now()}`,
-      };
-
-      await onExportPDF(invoiceData);
+      // Generate PDF without saving to file
+      const pdfDataUrl = await generatePDF(invoiceData, false);
+      
+      // Send email with PDF attachment
+      await sendInvoiceEmail(invoiceData, pdfDataUrl, clientEmail);
     } catch (error) {
-      console.error('Error exporting PDF:', error);
-      toast({
-        title: "Export Failed",
-        description: "Failed to export PDF. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingPDF(false);
+      console.error('Error sending email:', error);
     }
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Invoice Details</h2>
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="flex-1 sm:w-64">
+            <EmailInputSection
+              email={clientEmail}
+              onEmailChange={setClientEmail}
+              placeholder="Enter client's email address"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleSendEmail}
+              disabled={isSending || !clientEmail.trim()}
+              className="gap-2 bg-green-600 hover:bg-green-700"
+            >
+              {isSending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4" />
+                  Send to Client
+                </>
+              )}
+            </Button>
+            <Button onClick={handleExportPDF} className="gap-2">
+              <Download className="h-4 w-4" />
+              Export PDF
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <BusinessInfoSection
-        isOpen={openSection === 'business'}
-        onToggle={() => toggleSection('business')}
-        formData={formData}
-        onFieldChange={handleBusinessFieldChange}
-        onLogoUpload={handleLogoUpload}
+        businessName={invoiceData.businessName}
+        businessLogo={invoiceData.businessLogo}
+        businessAddress={invoiceData.businessAddress}
+        businessPhone={invoiceData.businessPhone}
+        businessEmail={invoiceData.businessEmail}
+        businessWebsite={invoiceData.businessWebsite}
+        onBusinessInfoChange={handleBusinessInfoChange}
       />
 
       <ClientInfoSection
-        isOpen={openSection === 'client'}
-        onToggle={() => toggleSection('client')}
-        formData={formData}
-        onFieldChange={handleClientFieldChange}
+        clientName={invoiceData.clientName}
+        clientAddress={invoiceData.clientAddress}
+        clientPhone={invoiceData.clientPhone}
+        clientEmail={invoiceData.clientEmail}
+        onClientInfoChange={handleClientInfoChange}
       />
 
       <DocumentDetailsSection
-        isOpen={openSection === 'details'}
-        onToggle={() => toggleSection('details')}
-        formData={formData}
-        onFieldChange={handleDraftFieldChange}
-        onCurrencyChange={handleCurrencyChange}
+        invoiceNumber={invoiceData.invoiceNumber}
+        invoiceDate={invoiceData.invoiceDate}
+        dueDate={invoiceData.dueDate}
+        currency={invoiceData.currency}
+        onDocumentDetailsChange={handleDocumentDetailsChange}
       />
 
       <ItemsSection
-        isOpen={openSection === 'items'}
-        onToggle={() => toggleSection('items')}
-        items={formData.items}
-        onAddItem={addItem}
-        onRemoveItem={removeItem}
-        onUpdateItem={updateItem}
+        items={invoiceData.items}
+        onItemsChange={handleItemsChange}
       />
 
       <NotesSection
-        isOpen={openSection === 'notes'}
-        onToggle={() => toggleSection('notes')}
-        formData={formData}
-        onFieldChange={handleDraftFieldChange}
+        notes={invoiceData.notes}
+        onNotesChange={handleNotesChange}
       />
 
-      {/* Export Button */}
-      <div className="pt-6">
-        <Button onClick={handleSubmit} disabled={loadingPDF} className="w-full h-12 text-lg">
-          {loadingPDF ? 'Generating PDF...' : 'Export PDF'}
-          <Download className="ml-2 h-5 w-5" />
-        </Button>
-      </div>
+      {/* Terms & Conditions Section */}
+      <NotesSection
+        title="Terms & Conditions"
+        notes={invoiceData.terms}
+        onNotesChange={handleTermsChange}
+      />
     </div>
   );
 };

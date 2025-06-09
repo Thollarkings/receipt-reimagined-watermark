@@ -17,7 +17,7 @@ const Index = () => {
 
   const handleExportPDF = async (data: InvoiceData) => {
     try {
-      await generatePDF(data);
+      await generatePDF(data, true); // true to save file locally
       toast({
         title: "PDF Export Successful",
         description: `${data.type === 'invoice' ? 'Invoice' : 'Receipt'} #${data.invoiceNumber} has been downloaded as PDF`,

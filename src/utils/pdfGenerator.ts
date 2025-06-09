@@ -2,7 +2,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { InvoiceData } from '@/types/invoice';
 
-export const generatePDF = async (data: InvoiceData): Promise<void> => {
+export const generatePDF = async (data: InvoiceData, saveToFile: boolean = true): Promise<string> => {
   try {
     console.log('Starting PDF generation for:', data.type);
 
@@ -50,12 +50,12 @@ export const generatePDF = async (data: InvoiceData): Promise<void> => {
 
     // Generate canvas from the temporary container with actual content height
     const canvas = await html2canvas(tempContainer, {
-      scale: 1.5,
+      scale: 2,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
-      width: 650, // Fixed width for consistent scaling
-      height: 1000, // Dynamic height based on content
+      width: 794,
+      height: fullHeight,
       scrollX: 0,
       scrollY: 0,
       logging: false
@@ -133,10 +133,17 @@ export const generatePDF = async (data: InvoiceData): Promise<void> => {
 
     console.log('Total pages generated:', page);
 
-    // Save the PDF with a meaningful filename
-    const filename = `${data.type}-${data.invoiceNumber || 'document'}.pdf`;
-    console.log('Saving PDF as:', filename);
-    pdf.save(filename);
+    // Get PDF as data URL for email sending
+    const pdfDataUrl = pdf.output('dataurlstring');
+
+    if (saveToFile) {
+      // Save the PDF with a meaningful filename
+      const filename = `${data.type}-${data.invoiceNumber || 'document'}.pdf`;
+      console.log('Saving PDF as:', filename);
+      pdf.save(filename);
+    }
+
+    return pdfDataUrl;
 
   } catch (error) {
     console.error('PDF generation error:', error);
