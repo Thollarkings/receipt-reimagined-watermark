@@ -198,11 +198,6 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
     }
   };
 
-  const handleItemsChange = (items: InvoiceItem[]) => {
-    setFormData(prev => ({ ...prev, items }));
-    saveSharedItems(items);
-  };
-
   const addItem = () => {
     const newItem: InvoiceItem = {
       id: Date.now().toString(),
@@ -374,8 +369,12 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
       />
 
       <ItemsSection
+        isOpen={openSection === 'items'}
+        onToggle={() => toggleSection('items')}
         items={formData.items}
-        onItemsChange={handleItemsChange}
+        onAddItem={addItem}
+        onRemoveItem={removeItem}
+        onUpdateItem={updateItem}
       />
 
       <NotesSection

@@ -135,9 +135,34 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
     saveDraftData({ [field]: value } as any);
   };
 
-  const handleItemsChange = (items: InvoiceItem[]) => {
-    setInvoiceData(prev => ({ ...prev, items: items }));
-    saveSharedItems(items);
+  const addItem = () => {
+    const newItem: InvoiceItem = {
+      id: Date.now().toString(),
+      description: '',
+      quantity: 1,
+      unitPrice: 0,
+      taxRate: 0,
+      discount: 0,
+    };
+    const updatedItems = [...invoiceData.items, newItem];
+    setInvoiceData(prev => ({ ...prev, items: updatedItems }));
+    saveSharedItems(updatedItems);
+  };
+
+  const removeItem = (id: string) => {
+    if (invoiceData.items.length > 1) {
+      const updatedItems = invoiceData.items.filter(item => item.id !== id);
+      setInvoiceData(prev => ({ ...prev, items: updatedItems }));
+      saveSharedItems(updatedItems);
+    }
+  };
+
+  const updateItem = (id: string, field: keyof InvoiceItem, value: any) => {
+    const updatedItems = invoiceData.items.map(item =>
+      item.id === id ? { ...item, [field]: value } : item
+    );
+    setInvoiceData(prev => ({ ...prev, items: updatedItems }));
+    saveSharedItems(updatedItems);
   };
 
   const handleNotesChange = (value: string) => {
@@ -267,8 +292,12 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
       />
 
       <ItemsSection
+        isOpen={true}
+        onToggle={() => {}}
         items={invoiceData.items}
-        onItemsChange={handleItemsChange}
+        onAddItem={addItem}
+        onRemoveItem={removeItem}
+        onUpdateItem={updateItem}
       />
 
       <NotesSection
