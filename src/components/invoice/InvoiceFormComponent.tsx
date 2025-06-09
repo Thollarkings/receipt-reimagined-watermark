@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Mail, Loader2 } from 'lucide-react';
@@ -260,11 +259,11 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
       />
 
       <DocumentDetailsSection
-        invoiceNumber={invoiceData.invoiceNumber}
-        invoiceDate={invoiceData.invoiceDate}
-        dueDate={invoiceData.dueDate}
-        currency={invoiceData.currency}
-        onDocumentDetailsChange={handleDocumentDetailsChange}
+        isOpen={true}
+        onToggle={() => {}}
+        formData={invoiceData}
+        onFieldChange={handleDocumentDetailsChange}
+        onCurrencyChange={handleDocumentDetailsChange}
       />
 
       <ItemsSection

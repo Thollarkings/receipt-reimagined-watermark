@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Mail, Loader2 } from 'lucide-react';
@@ -199,6 +198,11 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
     }
   };
 
+  const handleItemsChange = (items: InvoiceItem[]) => {
+    setFormData(prev => ({ ...prev, items }));
+    saveSharedItems(items);
+  };
+
   const addItem = () => {
     const newItem: InvoiceItem = {
       id: Date.now().toString(),
@@ -362,11 +366,11 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
       />
 
       <DocumentDetailsSection
-        invoiceNumber={formData.invoiceNumber}
-        invoiceDate={formData.invoiceDate}
-        dueDate={formData.dueDate}
-        currency={formData.currency}
-        onDocumentDetailsChange={handleDraftFieldChange}
+        isOpen={openSection === 'document'}
+        onToggle={() => toggleSection('document')}
+        formData={formData}
+        onFieldChange={handleDraftFieldChange}
+        onCurrencyChange={handleCurrencyChange}
       />
 
       <ItemsSection
