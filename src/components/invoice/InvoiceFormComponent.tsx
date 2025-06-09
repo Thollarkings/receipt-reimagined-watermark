@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Mail, Loader2 } from 'lucide-react';
@@ -10,6 +11,7 @@ import { EmailInputSection } from './EmailInputSection';
 import { InvoiceData, InvoiceItem } from '@/types/invoice';
 import { useDraftData } from '@/hooks/useDraftData';
 import { useEmailSending } from '@/hooks/useEmailSending';
+import { useProfileData } from '@/hooks/useProfileData';
 import { generatePDF } from '@/utils/pdfGenerator';
 
 interface InvoiceFormComponentProps {
@@ -24,10 +26,12 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
   colorScheme
 }) => {
   const { draftData, clientData, sharedItems, loading, saveDraftData, saveClientData, saveSharedItems } = useDraftData('invoice');
+  const { profileData, updateProfile } = useProfileData();
   const { sendInvoiceEmail, isSending } = useEmailSending();
   const [clientEmail, setClientEmail] = useState('');
 
   const [invoiceData, setInvoiceData] = useState<InvoiceData>({
+    id: `INV-${Date.now()}`,
     type: 'invoice',
     businessName: '',
     businessLogo: '',
@@ -45,8 +49,25 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
     currency: draftData?.currency || 'NGN',
     items: sharedItems || [{ id: '1', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discount: 0 }],
     notes: draftData?.notes || '',
-    terms: draftData?.terms || ''
+    terms: draftData?.terms || '',
+    colorScheme: colorScheme
   });
+
+  // Load profile data into form when available
+  useEffect(() => {
+    if (profileData && Object.keys(profileData).length > 0) {
+      setInvoiceData(prev => ({
+        ...prev,
+        businessName: profileData.business_name || '',
+        businessLogo: profileData.business_logo || '',
+        businessAddress: profileData.business_address || '',
+        businessPhone: profileData.business_phone || '',
+        businessEmail: profileData.business_email || '',
+        businessWebsite: profileData.business_website || '',
+        currency: profileData.default_currency || 'NGN',
+      }));
+    }
+  }, [profileData]);
 
   useEffect(() => {
     if (draftData) {
@@ -82,21 +103,37 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
   }, [sharedItems]);
 
   useEffect(() => {
-    onDataChange(invoiceData);
-  }, [invoiceData, onDataChange]);
+    onDataChange({
+      ...invoiceData,
+      colorScheme
+    });
+  }, [invoiceData, onDataChange, colorScheme]);
 
-  const handleBusinessInfoChange = (field: string, value: string) => {
+  const handleBusinessInfoChange = async (field: string, value: string) => {
     setInvoiceData(prev => ({ ...prev, [field]: value }));
+    
+    const dbField = field === 'businessName' ? 'business_name' :
+                   field === 'businessLogo' ? 'business_logo' :
+                   field === 'businessAddress' ? 'business_address' :
+                   field === 'businessPhone' ? 'business_phone' :
+                   field === 'businessEmail' ? 'business_email' :
+                   field === 'businessWebsite' ? 'business_website' : field;
+    
+    try {
+      await updateProfile({ [dbField]: value });
+    } catch (error) {
+      console.error('Failed to save business data:', error);
+    }
   };
 
   const handleClientInfoChange = (field: string, value: string) => {
-    setInvoiceData(prev => ({ ...prev, [field]: value }));
-    saveClientData({ [field]: value });
+    setInvoiceData(prev => ({ ...prev, [`client${field.charAt(0).toUpperCase() + field.slice(1)}`]: value }));
+    saveClientData({ [field]: value } as any);
   };
 
   const handleDocumentDetailsChange = (field: string, value: string) => {
     setInvoiceData(prev => ({ ...prev, [field]: value }));
-    saveDraftData({ [field]: value });
+    saveDraftData({ [field]: value } as any);
   };
 
   const handleItemsChange = (items: InvoiceItem[]) => {
@@ -115,7 +152,10 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
   };
 
   const handleExportPDF = async () => {
-    await onExportPDF(invoiceData);
+    await onExportPDF({
+      ...invoiceData,
+      colorScheme
+    });
   };
 
   // Update client email when clientData changes
@@ -133,10 +173,16 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
 
     try {
       // Generate PDF without saving to file
-      const pdfDataUrl = await generatePDF(invoiceData, false);
+      const pdfDataUrl = await generatePDF({
+        ...invoiceData,
+        colorScheme
+      }, false);
       
       // Send email with PDF attachment
-      await sendInvoiceEmail(invoiceData, pdfDataUrl, clientEmail);
+      await sendInvoiceEmail({
+        ...invoiceData,
+        colorScheme
+      }, pdfDataUrl, clientEmail);
     } catch (error) {
       console.error('Error sending email:', error);
     }
@@ -189,21 +235,28 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
       </div>
 
       <BusinessInfoSection
-        businessName={invoiceData.businessName}
-        businessLogo={invoiceData.businessLogo}
-        businessAddress={invoiceData.businessAddress}
-        businessPhone={invoiceData.businessPhone}
-        businessEmail={invoiceData.businessEmail}
-        businessWebsite={invoiceData.businessWebsite}
-        onBusinessInfoChange={handleBusinessInfoChange}
+        isOpen={true}
+        onToggle={() => {}}
+        formData={invoiceData}
+        onFieldChange={handleBusinessInfoChange}
+        onLogoUpload={(e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const result = e.target?.result as string;
+              handleBusinessInfoChange('businessLogo', result);
+            };
+            reader.readAsDataURL(file);
+          }
+        }}
       />
 
       <ClientInfoSection
-        clientName={invoiceData.clientName}
-        clientAddress={invoiceData.clientAddress}
-        clientPhone={invoiceData.clientPhone}
-        clientEmail={invoiceData.clientEmail}
-        onClientInfoChange={handleClientInfoChange}
+        isOpen={true}
+        onToggle={() => {}}
+        formData={invoiceData}
+        onFieldChange={handleClientInfoChange}
       />
 
       <DocumentDetailsSection

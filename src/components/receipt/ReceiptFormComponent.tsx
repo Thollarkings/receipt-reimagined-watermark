@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Mail, Loader2 } from 'lucide-react';
@@ -7,9 +8,11 @@ import { DocumentDetailsSection } from '@/components/invoice/DocumentDetailsSect
 import { ItemsSection } from '@/components/invoice/ItemsSection';
 import { NotesSection } from '@/components/invoice/NotesSection';
 import { EmailInputSection } from '@/components/invoice/EmailInputSection';
-import { InvoiceData } from '@/types/invoice';
+import { InvoiceData, InvoiceItem } from '@/types/invoice';
 import { useDraftData } from '@/hooks/useDraftData';
 import { useEmailSending } from '@/hooks/useEmailSending';
+import { useProfileData } from '@/hooks/useProfileData';
+import { useToast } from '@/hooks/use-toast';
 import { generatePDF } from '@/utils/pdfGenerator';
 
 interface ReceiptFormComponentProps {
@@ -32,14 +35,17 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
   watermarkDensity
 }) => {
   const { draftData, clientData, sharedItems, loading, saveDraftData, saveClientData, saveSharedItems } = useDraftData('receipt');
+  const { profileData, updateProfile } = useProfileData();
   const { sendInvoiceEmail, isSending } = useEmailSending();
+  const { toast } = useToast();
   const [clientEmail, setClientEmail] = useState('');
+  const [loadingPDF, setLoadingPDF] = useState(false);
 
   // Accordion state - only one section open at a time
   const [openSection, setOpenSection] = useState<string | null>('business');
   
   const [formData, setFormData] = useState<InvoiceData>({
-    id: '',
+    id: `REC-${Date.now()}`,
     type: 'receipt',
     businessName: '',
     businessLogo: '',
@@ -223,7 +229,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
     saveSharedItems(updatedItems);
   };
 
-  const handleSubmit = async () => {
+  const handleExportPDF = async () => {
     if (!formData.businessName || !formData.clientName) {
       toast({
         title: "Missing Information",
@@ -266,6 +272,15 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
     }
 
     try {
+      const receiptData = {
+        ...formData,
+        colorScheme,
+        darkMode,
+        watermarkColor,
+        watermarkOpacity,
+        watermarkDensity,
+      };
+
       // Generate PDF without saving to file
       const pdfDataUrl = await generatePDF(receiptData, false);
       
@@ -314,9 +329,18 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
                 </>
               )}
             </Button>
-            <Button onClick={handleExportPDF} className="gap-2">
-              <Download className="h-4 w-4" />
-              Export PDF
+            <Button onClick={handleExportPDF} className="gap-2" disabled={loadingPDF}>
+              {loadingPDF ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  Export PDF
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -338,27 +362,21 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
       />
 
       <DocumentDetailsSection
-        isOpen={openSection === 'details'}
-        onToggle={() => toggleSection('details')}
-        formData={formData}
-        onFieldChange={handleDraftFieldChange}
-        onCurrencyChange={handleCurrencyChange}
+        invoiceNumber={formData.invoiceNumber}
+        invoiceDate={formData.invoiceDate}
+        dueDate={formData.dueDate}
+        currency={formData.currency}
+        onDocumentDetailsChange={handleDraftFieldChange}
       />
 
       <ItemsSection
-        isOpen={openSection === 'items'}
-        onToggle={() => toggleSection('items')}
         items={formData.items}
-        onAddItem={addItem}
-        onRemoveItem={removeItem}
-        onUpdateItem={updateItem}
+        onItemsChange={handleItemsChange}
       />
 
       <NotesSection
-        isOpen={openSection === 'notes'}
-        onToggle={() => toggleSection('notes')}
-        formData={formData}
-        onFieldChange={handleDraftFieldChange}
+        notes={formData.notes}
+        onNotesChange={(value) => handleDraftFieldChange('notes', value)}
       />
     </div>
   );
