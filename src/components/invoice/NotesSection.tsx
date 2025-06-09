@@ -7,17 +7,19 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface NotesSectionProps {
-  isOpen: boolean;
-  onToggle: () => void;
-  formData: any;
-  onFieldChange: (field: string, value: string) => void;
+  title?: string;
+  notes: string;
+  onNotesChange: (value: string) => void;
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
 export const NotesSection: React.FC<NotesSectionProps> = ({
-  isOpen,
-  onToggle,
-  formData,
-  onFieldChange,
+  title = "Notes",
+  notes,
+  onNotesChange,
+  isOpen = true,
+  onToggle = () => {},
 }) => {
   return (
     <Collapsible open={isOpen} onOpenChange={onToggle}>
@@ -25,7 +27,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
         <CollapsibleTrigger asChild>
           <CardHeader className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <CardTitle className="flex items-center justify-between">
-              Notes & Terms
+              {title}
               {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
             </CardTitle>
           </CardHeader>
@@ -33,23 +35,14 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
         <CollapsibleContent>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor={title.toLowerCase().replace(/\s+/g, '-')}>
+                {title === "Terms & Conditions" ? "Terms & Conditions" : "Notes"}
+              </Label>
               <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => onFieldChange('notes', e.target.value)}
-                placeholder="Additional notes or comments"
-                rows={3}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="terms">Terms & Conditions</Label>
-              <Textarea
-                id="terms"
-                value={formData.terms}
-                onChange={(e) => onFieldChange('terms', e.target.value)}
-                placeholder="Payment terms and conditions"
+                id={title.toLowerCase().replace(/\s+/g, '-')}
+                value={notes}
+                onChange={(e) => onNotesChange(e.target.value)}
+                placeholder={title === "Terms & Conditions" ? "Payment terms and conditions" : "Additional notes or comments"}
                 rows={3}
                 className="mt-1"
               />

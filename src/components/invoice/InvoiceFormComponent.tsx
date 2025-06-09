@@ -276,7 +276,6 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
         onNotesChange={handleNotesChange}
       />
 
-      {/* Terms & Conditions Section */}
       <NotesSection
         title="Terms & Conditions"
         notes={invoiceData.terms}
