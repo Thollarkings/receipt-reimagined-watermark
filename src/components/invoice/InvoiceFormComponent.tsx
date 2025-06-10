@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { BusinessInfoSection } from './BusinessInfoSection';
 import { ClientInfoSection } from './ClientInfoSection';
@@ -21,6 +21,13 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
   onDataChange,
   colorScheme
 }) => {
+  // Accordion state - only one section open at a time
+  const [openSection, setOpenSection] = useState<string | null>('business');
+
+  const toggleSection = (section: string) => {
+    setOpenSection(openSection === section ? null : section);
+  };
+
   return (
     <InvoiceFormProvider
       onExportPDF={onExportPDF}
@@ -57,8 +64,8 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
         return (
           <div className="space-y-6">
             <BusinessInfoSection
-              isOpen={true}
-              onToggle={() => {}}
+              isOpen={openSection === 'business'}
+              onToggle={() => toggleSection('business')}
               formData={invoiceData}
               onFieldChange={handleBusinessInfoChange}
               onLogoUpload={(e) => {
@@ -75,23 +82,23 @@ export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
             />
 
             <ClientInfoSection
-              isOpen={true}
-              onToggle={() => {}}
+              isOpen={openSection === 'client'}
+              onToggle={() => toggleSection('client')}
               formData={invoiceData}
               onFieldChange={handleClientInfoChange}
             />
 
             <DocumentDetailsSection
-              isOpen={true}
-              onToggle={() => {}}
+              isOpen={openSection === 'document'}
+              onToggle={() => toggleSection('document')}
               formData={invoiceData}
               onFieldChange={handleDocumentDetailsChange}
               onCurrencyChange={handleCurrencyChange}
             />
 
             <ItemsSection
-              isOpen={true}
-              onToggle={() => {}}
+              isOpen={openSection === 'items'}
+              onToggle={() => toggleSection('items')}
               items={invoiceData.items}
               onAddItem={addItem}
               onRemoveItem={removeItem}

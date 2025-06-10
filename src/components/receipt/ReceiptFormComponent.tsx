@@ -139,6 +139,13 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
     });
   }, [formData, colorScheme, darkMode, watermarkColor, watermarkOpacity, watermarkDensity, onDataChange]);
 
+  // Update client email when clientData changes
+  useEffect(() => {
+    if (clientData?.email) {
+      setClientEmail(clientData.email);
+    }
+  }, [clientData]);
+
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section);
   };
@@ -340,7 +347,6 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
         onNotesChange={(value) => handleDraftFieldChange('terms', value)}
       />
 
-      {/* Repositioned header section with updated colors */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 bg-card border border-border rounded-lg">
         <h2 className="text-2xl font-bold text-foreground">Receipt Details</h2>
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
