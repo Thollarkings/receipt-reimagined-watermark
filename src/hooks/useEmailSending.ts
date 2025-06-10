@@ -17,12 +17,15 @@ export const useEmailSending = () => {
       setIsSending(true);
       console.log('Starting email send process...');
 
-      // Add client-side timeout (45 seconds)
-      const timeoutId = setTimeout(() => {
-        throw new Error('Email sending timed out. Please try again.');
-      }, 45000);
+      // Create a promise that rejects after 30 seconds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Email sending timed out. Please try again.'));
+        }, 30000);
+      });
 
-      const { data: result, error } = await supabase.functions.invoke('send-invoice-email', {
+      // Create the email sending promise
+      const emailPromise = supabase.functions.invoke('send-invoice-email', {
         body: {
           pdfDataUrl,
           clientEmail: clientEmail.trim(),
@@ -33,7 +36,8 @@ export const useEmailSending = () => {
         }
       });
 
-      clearTimeout(timeoutId);
+      // Race between the email promise and timeout
+      const { data: result, error } = await Promise.race([emailPromise, timeoutPromise]);
 
       if (error) {
         console.error('Supabase function error:', error);
@@ -61,8 +65,10 @@ export const useEmailSending = () => {
       
       let errorMessage = "There was an error sending the email. Please try again.";
       
-      if (error.message?.includes('timeout')) {
+      if (error.message?.includes('timeout') || error.message?.includes('timed out')) {
         errorMessage = "Email sending timed out. Please check your internet connection and try again.";
+      } else if (error.message?.includes('RESEND_API_KEY')) {
+        errorMessage = "Email service configuration error. Please contact support.";
       } else if (error.message) {
         errorMessage = error.message;
       }

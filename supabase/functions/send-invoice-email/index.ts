@@ -24,6 +24,8 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    console.log('Edge function started');
+    
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     
     if (!resendApiKey) {
@@ -43,6 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    console.log('RESEND_API_KEY found, initializing Resend...');
     const resend = new Resend(resendApiKey);
 
     const { 
@@ -54,9 +57,13 @@ const handler = async (req: Request): Promise<Response> => {
       documentType 
     }: SendInvoiceEmailRequest = await req.json();
 
-    console.log('Sending email to:', clientEmail);
-    console.log('Document type:', documentType);
-    console.log('Invoice number:', invoiceNumber);
+    console.log('Request data received:', {
+      clientEmail,
+      businessName,
+      invoiceNumber,
+      documentType,
+      pdfDataSize: pdfDataUrl ? pdfDataUrl.length : 0
+    });
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -79,78 +86,78 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('No PDF data found');
     }
 
+    console.log('Converting PDF data...');
     const pdfBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
 
     const subject = `Your ${documentType === 'invoice' ? 'Invoice' : 'Receipt'} from ${businessName}`;
     const fileName = `${documentType}-${invoiceNumber}.pdf`;
 
-    console.log('Attempting to send email with subject:', subject);
+    console.log('Preparing to send email with subject:', subject);
 
-    // Add timeout to the email sending
-    const emailPromise = resend.emails.send({
-      from: "InvoiceMax <onboarding@resend.dev>",
-      to: [clientEmail],
-      subject: subject,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Your ${documentType === 'invoice' ? 'Invoice' : 'Receipt'} from ${businessName}</h2>
-          <p>Dear ${clientName || 'Valued Customer'},</p>
-          <p>Please find your ${documentType} attached to this email.</p>
-          <p><strong>${documentType === 'invoice' ? 'Invoice' : 'Receipt'} Number:</strong> ${invoiceNumber}</p>
-          <p>Thank you for your business!</p>
-          <br>
-          <p>Best regards,<br>${businessName}</p>
-          <hr style="margin-top: 20px; border: none; border-top: 1px solid #eee;">
-          <p style="font-size: 12px; color: #666;">
-            This email was sent automatically from InvoiceMax. 
-            If you have any questions, please contact ${businessName} directly.
-          </p>
-        </div>
-      `,
-      attachments: [
+    try {
+      const emailResponse = await resend.emails.send({
+        from: "InvoiceMax <onboarding@resend.dev>",
+        to: [clientEmail],
+        subject: subject,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Your ${documentType === 'invoice' ? 'Invoice' : 'Receipt'} from ${businessName}</h2>
+            <p>Dear ${clientName || 'Valued Customer'},</p>
+            <p>Please find your ${documentType} attached to this email.</p>
+            <p><strong>${documentType === 'invoice' ? 'Invoice' : 'Receipt'} Number:</strong> ${invoiceNumber}</p>
+            <p>Thank you for your business!</p>
+            <br>
+            <p>Best regards,<br>${businessName}</p>
+            <hr style="margin-top: 20px; border: none; border-top: 1px solid #eee;">
+            <p style="font-size: 12px; color: #666;">
+              This email was sent automatically from InvoiceMax. 
+              If you have any questions, please contact ${businessName} directly.
+            </p>
+          </div>
+        `,
+        attachments: [
+          {
+            filename: fileName,
+            content: pdfBuffer,
+          },
+        ],
+      });
+
+      console.log("Email sent successfully:", emailResponse);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: `${documentType === 'invoice' ? 'Invoice' : 'Receipt'} sent successfully to ${clientEmail}`,
+          emailId: emailResponse.data?.id 
+        }),
         {
-          filename: fileName,
-          content: pdfBuffer,
-        },
-      ],
-    });
-
-    // Add timeout (30 seconds)
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Email sending timeout')), 30000);
-    });
-
-    const emailResponse = await Promise.race([emailPromise, timeoutPromise]);
-
-    console.log("Email sent successfully:", emailResponse);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `${documentType === 'invoice' ? 'Invoice' : 'Receipt'} sent successfully to ${clientEmail}`,
-        emailId: emailResponse.data?.id 
-      }),
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders,
-        },
-      }
-    );
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            ...corsHeaders,
+          },
+        }
+      );
+    } catch (resendError: any) {
+      console.error("Resend API error:", resendError);
+      throw new Error(`Email service error: ${resendError.message || 'Unknown error'}`);
+    }
   } catch (error: any) {
     console.error("Error in send-invoice-email function:", error);
     
     let errorMessage = 'Failed to send email';
+    let statusCode = 500;
     
-    if (error.message?.includes('timeout')) {
-      errorMessage = 'Email sending timed out. Please try again.';
-    } else if (error.message?.includes('API key')) {
-      errorMessage = 'Email service configuration error. Please contact support.';
-    } else if (error.message?.includes('Invalid email')) {
+    if (error.message?.includes('Invalid email')) {
       errorMessage = 'Please enter a valid email address.';
+      statusCode = 400;
     } else if (error.message?.includes('Missing required')) {
       errorMessage = 'Please fill in all required fields before sending.';
+      statusCode = 400;
+    } else if (error.message?.includes('API key')) {
+      errorMessage = 'Email service configuration error. Please contact support.';
+      statusCode = 500;
     } else if (error.message) {
       errorMessage = error.message;
     }
@@ -161,7 +168,7 @@ const handler = async (req: Request): Promise<Response> => {
         error: errorMessage 
       }),
       {
-        status: 500,
+        status: statusCode,
         headers: { 
           "Content-Type": "application/json", 
           ...corsHeaders 
