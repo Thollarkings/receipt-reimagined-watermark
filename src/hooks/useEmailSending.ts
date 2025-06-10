@@ -17,9 +17,10 @@ export const useEmailSending = () => {
       setIsSending(true);
       console.log('Starting email send process...');
 
-      // Add client-side timeout (45 seconds to give server time)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000);
+      // Add client-side timeout (45 seconds)
+      const timeoutId = setTimeout(() => {
+        throw new Error('Email sending timed out. Please try again.');
+      }, 45000);
 
       const { data: result, error } = await supabase.functions.invoke('send-invoice-email', {
         body: {
@@ -29,9 +30,6 @@ export const useEmailSending = () => {
           businessName: data.businessName || 'Your Business',
           invoiceNumber: data.invoiceNumber,
           documentType: data.type,
-        },
-        options: {
-          signal: controller.signal
         }
       });
 
@@ -63,7 +61,7 @@ export const useEmailSending = () => {
       
       let errorMessage = "There was an error sending the email. Please try again.";
       
-      if (error.name === 'AbortError') {
+      if (error.message?.includes('timeout')) {
         errorMessage = "Email sending timed out. Please check your internet connection and try again.";
       } else if (error.message) {
         errorMessage = error.message;
