@@ -15,6 +15,11 @@ export const useEmailSending = () => {
   ): Promise<boolean> => {
     try {
       setIsSending(true);
+      console.log('Starting email send process...');
+
+      // Add client-side timeout (45 seconds to give server time)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
 
       const { data: result, error } = await supabase.functions.invoke('send-invoice-email', {
         body: {
@@ -25,15 +30,27 @@ export const useEmailSending = () => {
           invoiceNumber: data.invoiceNumber,
           documentType: data.type,
         },
+        options: {
+          signal: controller.signal
+        }
       });
 
+      clearTimeout(timeoutId);
+
       if (error) {
-        throw new Error(error.message);
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Failed to call email function');
+      }
+
+      if (!result) {
+        throw new Error('No response from email service');
       }
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to send email');
       }
+
+      console.log('Email sent successfully:', result);
 
       toast({
         title: "Email Sent Successfully",
@@ -43,9 +60,18 @@ export const useEmailSending = () => {
       return true;
     } catch (error: any) {
       console.error('Email sending error:', error);
+      
+      let errorMessage = "There was an error sending the email. Please try again.";
+      
+      if (error.name === 'AbortError') {
+        errorMessage = "Email sending timed out. Please check your internet connection and try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: "Failed to Send Email",
-        description: error.message || "There was an error sending the email. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
       return false;

@@ -55,6 +55,8 @@ const handler = async (req: Request): Promise<Response> => {
     }: SendInvoiceEmailRequest = await req.json();
 
     console.log('Sending email to:', clientEmail);
+    console.log('Document type:', documentType);
+    console.log('Invoice number:', invoiceNumber);
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -62,14 +64,30 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Invalid email address format');
     }
 
+    // Validate required fields
+    if (!pdfDataUrl || !clientEmail || !businessName || !invoiceNumber) {
+      throw new Error('Missing required fields');
+    }
+
     // Convert data URL to buffer for attachment
+    if (!pdfDataUrl.startsWith('data:application/pdf;base64,')) {
+      throw new Error('Invalid PDF data format');
+    }
+
     const base64Data = pdfDataUrl.split(',')[1];
+    if (!base64Data) {
+      throw new Error('No PDF data found');
+    }
+
     const pdfBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
 
     const subject = `Your ${documentType === 'invoice' ? 'Invoice' : 'Receipt'} from ${businessName}`;
     const fileName = `${documentType}-${invoiceNumber}.pdf`;
 
-    const emailResponse = await resend.emails.send({
+    console.log('Attempting to send email with subject:', subject);
+
+    // Add timeout to the email sending
+    const emailPromise = resend.emails.send({
       from: "InvoiceMax <onboarding@resend.dev>",
       to: [clientEmail],
       subject: subject,
@@ -97,6 +115,13 @@ const handler = async (req: Request): Promise<Response> => {
       ],
     });
 
+    // Add timeout (30 seconds)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Email sending timeout')), 30000);
+    });
+
+    const emailResponse = await Promise.race([emailPromise, timeoutPromise]);
+
     console.log("Email sent successfully:", emailResponse);
 
     return new Response(
@@ -115,10 +140,25 @@ const handler = async (req: Request): Promise<Response> => {
     );
   } catch (error: any) {
     console.error("Error in send-invoice-email function:", error);
+    
+    let errorMessage = 'Failed to send email';
+    
+    if (error.message?.includes('timeout')) {
+      errorMessage = 'Email sending timed out. Please try again.';
+    } else if (error.message?.includes('API key')) {
+      errorMessage = 'Email service configuration error. Please contact support.';
+    } else if (error.message?.includes('Invalid email')) {
+      errorMessage = 'Please enter a valid email address.';
+    } else if (error.message?.includes('Missing required')) {
+      errorMessage = 'Please fill in all required fields before sending.';
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message || 'Failed to send email' 
+        error: errorMessage 
       }),
       {
         status: 500,
