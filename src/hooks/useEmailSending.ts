@@ -17,7 +17,7 @@ export const useEmailSending = () => {
       setIsSending(true);
       console.log('Starting email send process...');
 
-      // Create a promise that rejects after 30 seconds
+      // Create a timeout promise that rejects after 30 seconds
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => {
           reject(new Error('Email sending timed out. Please try again.'));
@@ -37,26 +37,29 @@ export const useEmailSending = () => {
       });
 
       // Race between the email promise and timeout
-      const { data: result, error } = await Promise.race([emailPromise, timeoutPromise]);
+      const result = await Promise.race([emailPromise, timeoutPromise]);
+      
+      // Since timeoutPromise only rejects, result will always be from emailPromise
+      const { data: responseData, error } = result as any;
 
       if (error) {
         console.error('Supabase function error:', error);
         throw new Error(error.message || 'Failed to call email function');
       }
 
-      if (!result) {
+      if (!responseData) {
         throw new Error('No response from email service');
       }
 
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to send email');
+      if (!responseData.success) {
+        throw new Error(responseData.error || 'Failed to send email');
       }
 
-      console.log('Email sent successfully:', result);
+      console.log('Email sent successfully:', responseData);
 
       toast({
         title: "Email Sent Successfully",
-        description: result.message,
+        description: responseData.message,
       });
 
       return true;
