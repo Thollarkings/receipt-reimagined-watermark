@@ -1,3 +1,4 @@
+
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { InvoiceData } from '@/types/invoice';
@@ -48,9 +49,9 @@ export const generatePDF = async (data: InvoiceData, saveToFile: boolean = true)
     const contentRect = tempContainer.getBoundingClientRect();
     const fullHeight = Math.ceil(contentRect.height);
 
-    // Generate canvas from the temporary container with actual content height
+    // Generate canvas with reduced scale for smaller file size
     const canvas = await html2canvas(tempContainer, {
-      scale: 2,
+      scale: 1.2, // Reduced from 2 to 1.2 for smaller file size
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
@@ -116,8 +117,8 @@ export const generatePDF = async (data: InvoiceData, saveToFile: boolean = true)
         canvas.width, sliceHeightPx  // destination width, height
       );
 
-      // Convert slice to image data
-      const imgData = pageCanvas.toDataURL('image/png');
+      // Convert slice to image data with compression
+      const imgData = pageCanvas.toDataURL('image/jpeg', 0.8); // Use JPEG with 80% quality for compression
 
       // Scaled height of this slice in mm
       const scaledSliceHeight = sliceHeightPx * pxToMm * scale;
@@ -125,7 +126,7 @@ export const generatePDF = async (data: InvoiceData, saveToFile: boolean = true)
       if (page > 0) pdf.addPage();
 
       // Add image to PDF, horizontally centered, top aligned vertically
-      pdf.addImage(imgData, 'PNG', offsetX, 0, scaledWidth, scaledSliceHeight);
+      pdf.addImage(imgData, 'JPEG', offsetX, 0, scaledWidth, scaledSliceHeight);
 
       remainingHeightPx -= sliceHeightPx;
       page++;
