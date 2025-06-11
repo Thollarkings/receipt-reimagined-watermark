@@ -76,10 +76,17 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Missing required fields');
     }
 
-    // Convert data URL to buffer for attachment
-    // Handle different PDF data formats
+    // Check PDF size limit (10MB max for email attachments)
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (pdfDataUrl.length > maxSize) {
+      console.error(`PDF too large: ${pdfDataUrl.length} bytes (max: ${maxSize})`);
+      throw new Error('PDF file is too large for email attachment. Please reduce the file size.');
+    }
+
+    // Convert data URL to buffer for attachment with optimized processing
     let base64Data: string;
     
+    console.log('Processing PDF data format...');
     if (pdfDataUrl.startsWith('data:application/pdf;base64,')) {
       base64Data = pdfDataUrl.split(',')[1];
     } else if (pdfDataUrl.startsWith('data:application/pdf;filename=')) {
@@ -95,67 +102,97 @@ const handler = async (req: Request): Promise<Response> => {
       base64Data = pdfDataUrl;
     }
 
-    if (!base64Data) {
+    if (!base64Data || base64Data.length === 0) {
       throw new Error('No PDF data found');
     }
 
-    console.log('Converting PDF data...');
+    console.log('Converting PDF data to buffer...');
+    
+    // Use streaming approach for large files to prevent memory issues
+    let pdfBuffer: Uint8Array;
     try {
-      const pdfBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+      // Process in chunks to prevent memory overload
+      const chunkSize = 1024 * 1024; // 1MB chunks
+      const chunks: Uint8Array[] = [];
       
-      const subject = `Your ${documentType === 'invoice' ? 'Invoice' : 'Receipt'} from ${businessName}`;
-      const fileName = `${documentType}-${invoiceNumber}.pdf`;
-
-      console.log('Preparing to send email with subject:', subject);
-
-      const emailResponse = await resend.emails.send({
-        from: "InvoiceMax <onboarding@resend.dev>",
-        to: [clientEmail],
-        subject: subject,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">Your ${documentType === 'invoice' ? 'Invoice' : 'Receipt'} from ${businessName}</h2>
-            <p>Dear ${clientName || 'Valued Customer'},</p>
-            <p>Please find your ${documentType} attached to this email.</p>
-            <p><strong>${documentType === 'invoice' ? 'Invoice' : 'Receipt'} Number:</strong> ${invoiceNumber}</p>
-            <p>Thank you for your business!</p>
-            <br>
-            <p>Best regards,<br>${businessName}</p>
-            <hr style="margin-top: 20px; border: none; border-top: 1px solid #eee;">
-            <p style="font-size: 12px; color: #666;">
-              This email was sent automatically from InvoiceMax. 
-              If you have any questions, please contact ${businessName} directly.
-            </p>
-          </div>
-        `,
-        attachments: [
-          {
-            filename: fileName,
-            content: pdfBuffer,
-          },
-        ],
-      });
-
-      console.log("Email sent successfully:", emailResponse);
-
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: `${documentType === 'invoice' ? 'Invoice' : 'Receipt'} sent successfully to ${clientEmail}`,
-          emailId: emailResponse.data?.id 
-        }),
-        {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json",
-            ...corsHeaders,
-          },
+      for (let i = 0; i < base64Data.length; i += chunkSize) {
+        const chunk = base64Data.slice(i, i + chunkSize);
+        const binaryString = atob(chunk);
+        const chunkArray = new Uint8Array(binaryString.length);
+        
+        for (let j = 0; j < binaryString.length; j++) {
+          chunkArray[j] = binaryString.charCodeAt(j);
         }
-      );
-    } catch (base64Error) {
-      console.error("Error processing PDF data:", base64Error);
-      throw new Error(`Invalid PDF data format: ${base64Error.message}`);
+        
+        chunks.push(chunkArray);
+      }
+      
+      // Combine all chunks
+      const totalLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      pdfBuffer = new Uint8Array(totalLength);
+      let offset = 0;
+      
+      for (const chunk of chunks) {
+        pdfBuffer.set(chunk, offset);
+        offset += chunk.length;
+      }
+      
+      console.log(`PDF buffer created successfully: ${pdfBuffer.length} bytes`);
+      
+    } catch (conversionError) {
+      console.error("Error converting PDF data:", conversionError);
+      throw new Error(`Failed to process PDF data: ${conversionError.message}`);
     }
+
+    const subject = `Your ${documentType === 'invoice' ? 'Invoice' : 'Receipt'} from ${businessName}`;
+    const fileName = `${documentType}-${invoiceNumber}.pdf`;
+
+    console.log('Preparing to send email with subject:', subject);
+
+    const emailResponse = await resend.emails.send({
+      from: "InvoiceMax <onboarding@resend.dev>",
+      to: [clientEmail],
+      subject: subject,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Your ${documentType === 'invoice' ? 'Invoice' : 'Receipt'} from ${businessName}</h2>
+          <p>Dear ${clientName || 'Valued Customer'},</p>
+          <p>Please find your ${documentType} attached to this email.</p>
+          <p><strong>${documentType === 'invoice' ? 'Invoice' : 'Receipt'} Number:</strong> ${invoiceNumber}</p>
+          <p>Thank you for your business!</p>
+          <br>
+          <p>Best regards,<br>${businessName}</p>
+          <hr style="margin-top: 20px; border: none; border-top: 1px solid #eee;">
+          <p style="font-size: 12px; color: #666;">
+            This email was sent automatically from InvoiceMax. 
+            If you have any questions, please contact ${businessName} directly.
+          </p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: fileName,
+          content: pdfBuffer,
+        },
+      ],
+    });
+
+    console.log("Email sent successfully:", emailResponse);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        message: `${documentType === 'invoice' ? 'Invoice' : 'Receipt'} sent successfully to ${clientEmail}`,
+        emailId: emailResponse.data?.id 
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Error in send-invoice-email function:", error);
     
@@ -171,7 +208,10 @@ const handler = async (req: Request): Promise<Response> => {
     } else if (error.message?.includes('API key')) {
       errorMessage = 'Email service configuration error. Please contact support.';
       statusCode = 500;
-    } else if (error.message?.includes('PDF data format')) {
+    } else if (error.message?.includes('too large')) {
+      errorMessage = 'PDF file is too large for email. Please try generating a smaller PDF.';
+      statusCode = 400;
+    } else if (error.message?.includes('PDF data format') || error.message?.includes('Failed to process PDF')) {
       errorMessage = 'Invalid PDF format. Please try generating the PDF again.';
       statusCode = 400;
     } else if (error.message) {
