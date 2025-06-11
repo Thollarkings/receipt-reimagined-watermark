@@ -77,24 +77,37 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Convert data URL to buffer for attachment
-    if (!pdfDataUrl.startsWith('data:application/pdf;base64,')) {
-      throw new Error('Invalid PDF data format');
+    // Handle different PDF data formats
+    let base64Data: string;
+    
+    if (pdfDataUrl.startsWith('data:application/pdf;base64,')) {
+      base64Data = pdfDataUrl.split(',')[1];
+    } else if (pdfDataUrl.startsWith('data:application/pdf;filename=')) {
+      // Handle format like: data:application/pdf;filename=generated.pdf;base64,
+      const parts = pdfDataUrl.split(',');
+      if (parts.length >= 2) {
+        base64Data = parts[1];
+      } else {
+        throw new Error('Invalid PDF data format - no base64 data found');
+      }
+    } else {
+      // Assume it's already base64 data
+      base64Data = pdfDataUrl;
     }
 
-    const base64Data = pdfDataUrl.split(',')[1];
     if (!base64Data) {
       throw new Error('No PDF data found');
     }
 
     console.log('Converting PDF data...');
-    const pdfBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-
-    const subject = `Your ${documentType === 'invoice' ? 'Invoice' : 'Receipt'} from ${businessName}`;
-    const fileName = `${documentType}-${invoiceNumber}.pdf`;
-
-    console.log('Preparing to send email with subject:', subject);
-
     try {
+      const pdfBuffer = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+      
+      const subject = `Your ${documentType === 'invoice' ? 'Invoice' : 'Receipt'} from ${businessName}`;
+      const fileName = `${documentType}-${invoiceNumber}.pdf`;
+
+      console.log('Preparing to send email with subject:', subject);
+
       const emailResponse = await resend.emails.send({
         from: "InvoiceMax <onboarding@resend.dev>",
         to: [clientEmail],
@@ -139,9 +152,9 @@ const handler = async (req: Request): Promise<Response> => {
           },
         }
       );
-    } catch (resendError: any) {
-      console.error("Resend API error:", resendError);
-      throw new Error(`Email service error: ${resendError.message || 'Unknown error'}`);
+    } catch (base64Error) {
+      console.error("Error processing PDF data:", base64Error);
+      throw new Error(`Invalid PDF data format: ${base64Error.message}`);
     }
   } catch (error: any) {
     console.error("Error in send-invoice-email function:", error);
@@ -158,6 +171,9 @@ const handler = async (req: Request): Promise<Response> => {
     } else if (error.message?.includes('API key')) {
       errorMessage = 'Email service configuration error. Please contact support.';
       statusCode = 500;
+    } else if (error.message?.includes('PDF data format')) {
+      errorMessage = 'Invalid PDF format. Please try generating the PDF again.';
+      statusCode = 400;
     } else if (error.message) {
       errorMessage = error.message;
     }

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, Mail, Loader2 } from 'lucide-react';
 import { BusinessInfoSection } from '@/components/invoice/BusinessInfoSection';
@@ -73,6 +74,11 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
     watermarkDensity: watermarkDensity,
   });
 
+  // Memoized callback for data change to prevent infinite re-renders
+  const handleDataChange = useCallback((data: InvoiceData) => {
+    onDataChange(data);
+  }, [onDataChange]);
+
   // Load profile data into form when available
   useEffect(() => {
     if (profileData && Object.keys(profileData).length > 0) {
@@ -127,24 +133,25 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
     }
   }, [sharedItems]);
 
-  // Update preview whenever form data changes
+  // Update preview whenever form data changes - with proper dependencies
   useEffect(() => {
-    onDataChange({ 
+    const updatedData = { 
       ...formData, 
       colorScheme, 
       darkMode, 
       watermarkColor, 
       watermarkOpacity, 
       watermarkDensity 
-    });
-  }, [formData, colorScheme, darkMode, watermarkColor, watermarkOpacity, watermarkDensity, onDataChange]);
+    };
+    handleDataChange(updatedData);
+  }, [formData, colorScheme, darkMode, watermarkColor, watermarkOpacity, watermarkDensity, handleDataChange]);
 
   // Update client email when clientData changes
   useEffect(() => {
     if (clientData?.email) {
       setClientEmail(clientData.email);
     }
-  }, [clientData]);
+  }, [clientData?.email]);
 
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section);
@@ -273,7 +280,11 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
 
   const handleSendEmail = async () => {
     if (!clientEmail.trim()) {
-      alert('Please enter a valid email address');
+      toast({
+        title: "Missing Email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -287,10 +298,18 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
         watermarkDensity,
       };
 
+      console.log('Generating PDF for email...');
       const pdfDataUrl = await generatePDF(receiptData, false);
+      console.log('PDF generated successfully, sending email...');
+      
       await sendInvoiceEmail(receiptData, pdfDataUrl, clientEmail);
     } catch (error) {
       console.error('Error sending email:', error);
+      toast({
+        title: "Email Failed",
+        description: "Failed to send email. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
