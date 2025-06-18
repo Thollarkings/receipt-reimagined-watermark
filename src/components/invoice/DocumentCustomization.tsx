@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -60,6 +61,17 @@ export const DocumentCustomization: React.FC<DocumentCustomizationProps> = ({
     { name: 'Pink', value: '#ec4899' }
   ];
 
+  const handleWatermarkToggle = (enabled: boolean) => {
+    onWatermarkEnabledChange?.(enabled);
+    // When watermark is disabled, set density to 0 to remove it
+    if (!enabled) {
+      onWatermarkDensityChange?.(0);
+    } else {
+      // When enabled, restore the previous density (or default to 30)
+      onWatermarkDensityChange?.(watermarkDensity > 0 ? watermarkDensity : 30);
+    }
+  };
+
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <Card>
@@ -115,7 +127,7 @@ export const DocumentCustomization: React.FC<DocumentCustomizationProps> = ({
                     <Label className="text-base font-medium">Enable Watermark</Label>
                     <Switch
                       checked={watermarkEnabled}
-                      onCheckedChange={onWatermarkEnabledChange}
+                      onCheckedChange={handleWatermarkToggle}
                     />
                   </div>
 

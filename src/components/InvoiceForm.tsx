@@ -8,7 +8,9 @@ import InvoicePreview from '@/components/invoice/InvoicePreview';
 import { ReceiptPreview } from '@/components/receipt/ReceiptPreview';
 import { InvoiceHistory } from '@/components/invoice/InvoiceHistory';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Save } from 'lucide-react';
+import { useInvoiceStorage } from '@/hooks/useInvoiceStorage';
+import { useToast } from '@/hooks/use-toast';
 
 interface InvoiceFormProps {
   onExportPDF: (data: InvoiceData) => Promise<void>;
@@ -27,6 +29,9 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const [previewData, setPreviewData] = useState<InvoiceData | null>(null);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const [isEditingHistory, setIsEditingHistory] = useState(false);
+  
+  const { saveInvoiceData, saving } = useInvoiceStorage();
+  const { toast } = useToast();
 
   const handleDataChange = (data: InvoiceData) => {
     setPreviewData(data);
@@ -72,6 +77,42 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
     setPreviewData(null);
   };
 
+  const handleSaveDocument = async () => {
+    if (!previewData) {
+      toast({
+        title: "Nothing to Save",
+        description: "Please fill out the form before saving.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const saveData = {
+        ...previewData,
+        colorScheme,
+        darkMode,
+        watermarkColor,
+        watermarkOpacity,
+        watermarkDensity: watermarkEnabled ? watermarkDensity : 0,
+        watermarkEnabled
+      };
+      
+      await saveInvoiceData(saveData);
+      
+      toast({
+        title: "Document Saved",
+        description: `${documentType === 'invoice' ? 'Invoice' : 'Receipt'} #${previewData.invoiceNumber} has been saved successfully.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Save Failed",
+        description: "Failed to save the document. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleWatermarkEnabledChange = (enabled: boolean) => {
     setWatermarkEnabled(enabled);
     // If watermark is disabled, set density to 0 to remove it from preview
@@ -97,8 +138,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             <DocumentTypeSelector type={documentType} onTypeChange={setDocumentType} />
           </div>
 
-          {/* New Invoice/Receipt Button */}
-          <div className="mb-6">
+          {/* New Invoice/Receipt and Save Buttons */}
+          <div className="mb-6 space-y-3">
             <Button
               onClick={handleNewDocument}
               className="w-full bg-gradient-to-r from-fuchsia-200 to-violet-300 text-black hover:from-fuchsia-300 hover:to-violet-400 rounded-lg gap-2"
@@ -106,6 +147,16 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             >
               <Plus className="h-4 w-4" />
               New {documentType === 'invoice' ? 'Invoice' : 'Receipt'}
+            </Button>
+            
+            <Button
+              onClick={handleSaveDocument}
+              disabled={saving || !previewData}
+              className="w-full bg-gradient-to-r from-fuchsia-200 to-violet-300 text-black hover:from-fuchsia-300 hover:to-violet-400 rounded-lg gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="outline"
+            >
+              <Save className="h-4 w-4" />
+              {saving ? 'Saving...' : `Save ${documentType === 'invoice' ? 'Invoice' : 'Receipt'}`}
             </Button>
           </div>
           

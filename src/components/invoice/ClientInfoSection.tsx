@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,8 +26,8 @@ export const ClientInfoSection: React.FC<ClientInfoSectionProps> = ({
         <Label htmlFor="clientName">Client Name</Label>
         <Input
           id="clientName"
-          value={formData.clientName}
-          onChange={(e) => onFieldChange('name', e.target.value)}
+          value={formData.clientName || ''}
+          onChange={(e) => onFieldChange('clientName', e.target.value)}
           placeholder="Client Name"
           className="mt-1"
         />
@@ -36,8 +37,8 @@ export const ClientInfoSection: React.FC<ClientInfoSectionProps> = ({
         <Label htmlFor="clientAddress">Client Address</Label>
         <Textarea
           id="clientAddress"
-          value={formData.clientAddress}
-          onChange={(e) => onFieldChange('address', e.target.value)}
+          value={formData.clientAddress || ''}
+          onChange={(e) => onFieldChange('clientAddress', e.target.value)}
           placeholder="Client Address"
           rows={3}
           className="mt-1"
@@ -49,8 +50,8 @@ export const ClientInfoSection: React.FC<ClientInfoSectionProps> = ({
           <Label htmlFor="clientPhone">Phone</Label>
           <Input
             id="clientPhone"
-            value={formData.clientPhone}
-            onChange={(e) => onFieldChange('phone', e.target.value)}
+            value={formData.clientPhone || ''}
+            onChange={(e) => onFieldChange('clientPhone', e.target.value)}
             placeholder="Phone Number"
             className="mt-1"
           />
@@ -60,8 +61,8 @@ export const ClientInfoSection: React.FC<ClientInfoSectionProps> = ({
           <Input
             id="clientEmail"
             type="email"
-            value={formData.clientEmail}
-            onChange={(e) => onFieldChange('email', e.target.value)}
+            value={formData.clientEmail || ''}
+            onChange={(e) => onFieldChange('clientEmail', e.target.value)}
             placeholder="client@example.com"
             className="mt-1"
           />
