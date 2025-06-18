@@ -135,7 +135,7 @@ export const ReceiptFormComponent: React.FC<ReceiptFormComponentProps> = ({
                   watermarkColor={watermarkColor}
                   onWatermarkColorChange={onWatermarkColorChange}
                   watermarkOpacity={watermarkOpacity}
-                  onWatermarkOpacityChange={onWatermarkOpacity}
+                  onWatermarkOpacityChange={onWatermarkOpacityChange}
                   watermarkDensity={watermarkDensity}
                   onWatermarkDensityChange={onWatermarkDensityChange}
                 />
