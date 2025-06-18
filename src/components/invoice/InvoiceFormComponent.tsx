@@ -1,299 +1,224 @@
 
 import React, { useState, useEffect } from 'react';
+import { Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { InvoiceData, InvoiceItem } from '@/types/invoice';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { useProfileData } from '@/hooks/useProfileData';
-import { useDraftData } from '@/hooks/useDraftData';
 import { BusinessInfoSection } from './BusinessInfoSection';
 import { ClientInfoSection } from './ClientInfoSection';
 import { DocumentDetailsSection } from './DocumentDetailsSection';
+import { DocumentCustomization } from './DocumentCustomization';
 import { ItemsSection } from './ItemsSection';
 import { NotesSection } from './NotesSection';
+import { InvoiceActions } from './InvoiceActions';
+import { InvoiceFormProvider } from './InvoiceFormProvider';
+import { InvoiceData } from '@/types/invoice';
+import { TabsCustom, TabsListCustom, TabsTriggerCustom, TabsContentCustom } from '@/components/ui/tabs-custom';
 
 interface InvoiceFormComponentProps {
   onExportPDF: (data: InvoiceData) => Promise<void>;
   onDataChange: (data: InvoiceData) => void;
   colorScheme: string;
+  onColorSchemeChange: (scheme: string) => void;
+  darkMode: boolean;
+  onDarkModeChange: (dark: boolean) => void;
+  watermarkEnabled: boolean;
+  onWatermarkEnabledChange: (enabled: boolean) => void;
+  watermarkColor: string;
+  onWatermarkColorChange: (color: string) => void;
+  watermarkOpacity: number;
+  onWatermarkOpacityChange: (opacity: number) => void;
+  watermarkDensity: number;
+  onWatermarkDensityChange: (density: number) => void;
+  historyData?: InvoiceData | null;
+  onNewDocument: () => void;
 }
 
-export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({ 
-  onExportPDF, 
-  onDataChange, 
-  colorScheme 
+export const InvoiceFormComponent: React.FC<InvoiceFormComponentProps> = ({
+  onExportPDF,
+  onDataChange,
+  colorScheme,
+  onColorSchemeChange,
+  darkMode,
+  onDarkModeChange,
+  watermarkEnabled,
+  onWatermarkEnabledChange,
+  watermarkColor,
+  onWatermarkColorChange,
+  watermarkOpacity,
+  onWatermarkOpacityChange,
+  watermarkDensity,
+  onWatermarkDensityChange,
+  historyData,
+  onNewDocument
 }) => {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const { profileData, updateProfile } = useProfileData();
-  const { draftData, clientData, sharedItems, loading, saveDraftData, saveClientData, saveSharedItems, setDraftData, setClientData } = useDraftData('invoice');
-  const [loadingPDF, setLoadingPDF] = useState(false);
-  
-  // Accordion state - only one section open at a time
-  const [openSection, setOpenSection] = useState<string | null>('business');
-  
-  const [formData, setFormData] = useState<InvoiceData>({
-    id: '',
-    type: 'invoice',
-    businessName: '',
-    businessLogo: '',
-    businessAddress: '',
-    businessPhone: '',
-    businessEmail: '',
-    businessWebsite: '',
-    clientName: '',
-    clientAddress: '',
-    clientPhone: '',
-    clientEmail: '',
-    invoiceNumber: `INV-${Date.now()}`,
-    invoiceDate: new Date().toISOString().split('T')[0],
-    dueDate: '',
-    paymentDate: '',
-    paymentMethod: '',
-    currency: 'NGN',
-    items: [{ id: '1', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discount: 0 }],
-    notes: '',
-    terms: '',
-    amountPaid: 0,
-    colorScheme: colorScheme,
-    darkMode: false,
-    watermarkColor: '#9ca3af',
-    watermarkOpacity: 20,
-    watermarkDensity: 30,
-  });
-
-  // Load profile data into form when available
-  useEffect(() => {
-    if (profileData && Object.keys(profileData).length > 0) {
-      setFormData(prev => ({
-        ...prev,
-        businessName: profileData.business_name || '',
-        businessLogo: profileData.business_logo || '',
-        businessAddress: profileData.business_address || '',
-        businessPhone: profileData.business_phone || '',
-        businessEmail: profileData.business_email || '',
-        businessWebsite: profileData.business_website || '',
-        currency: profileData.default_currency || 'NGN',
-      }));
-    }
-  }, [profileData]);
-
-  // Load draft and client data when available
-  useEffect(() => {
-    if (draftData && !loading) {
-      setFormData(prev => ({
-        ...prev,
-        invoiceNumber: draftData.invoiceNumber,
-        invoiceDate: draftData.invoiceDate,
-        dueDate: draftData.dueDate,
-        paymentDate: draftData.paymentDate || '',
-        paymentMethod: draftData.paymentMethod || '',
-        currency: draftData.currency,
-        notes: draftData.notes,
-        terms: draftData.terms,
-        amountPaid: draftData.amountPaid || 0,
-      }));
-    }
-  }, [draftData, loading]);
-
-  useEffect(() => {
-    if (clientData) {
-      setFormData(prev => ({
-        ...prev,
-        clientName: clientData.name,
-        clientAddress: clientData.address,
-        clientPhone: clientData.phone,
-        clientEmail: clientData.email,
-      }));
-    }
-  }, [clientData]);
-
-  // Load shared items
-  useEffect(() => {
-    if (sharedItems.length > 0) {
-      setFormData(prev => ({ ...prev, items: sharedItems }));
-    }
-  }, [sharedItems]);
-
-  // Update preview whenever form data changes
-  useEffect(() => {
-    onDataChange({ ...formData, colorScheme });
-  }, [formData, colorScheme, onDataChange]);
-
-  const toggleSection = (section: string) => {
-    setOpenSection(openSection === section ? null : section);
-  };
-
-  const handleBusinessFieldChange = async (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    const dbField = field === 'businessName' ? 'business_name' :
-                   field === 'businessLogo' ? 'business_logo' :
-                   field === 'businessAddress' ? 'business_address' :
-                   field === 'businessPhone' ? 'business_phone' :
-                   field === 'businessEmail' ? 'business_email' :
-                   field === 'businessWebsite' ? 'business_website' : field;
-    
-    try {
-      await updateProfile({ [dbField]: value });
-    } catch (error) {
-      console.error('Failed to save business data:', error);
-    }
-  };
-
-  const handleDraftFieldChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (draftData) {
-      saveDraftData({ [field]: value } as any);
-    }
-  };
-
-  const handleClientFieldChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [`client${field.charAt(0).toUpperCase() + field.slice(1)}`]: value }));
-    if (clientData) {
-      saveClientData({ [field]: value } as any);
-    }
-  };
-
-  const handleCurrencyChange = async (value: string) => {
-    setFormData(prev => ({ ...prev, currency: value }));
-    try {
-      await updateProfile({ default_currency: value });
-      if (draftData) {
-        saveDraftData({ currency: value });
-      }
-    } catch (error) {
-      console.error('Failed to save currency:', error);
-    }
-  };
-
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        handleBusinessFieldChange('businessLogo', result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const addItem = () => {
-    const newItem: InvoiceItem = {
-      id: Date.now().toString(),
-      description: '',
-      quantity: 1,
-      unitPrice: 0,
-      taxRate: 0,
-      discount: 0,
-    };
-    const updatedItems = [...formData.items, newItem];
-    setFormData(prev => ({ ...prev, items: updatedItems }));
-    saveSharedItems(updatedItems);
-  };
-
-  const removeItem = (id: string) => {
-    if (formData.items.length > 1) {
-      const updatedItems = formData.items.filter(item => item.id !== id);
-      setFormData(prev => ({ ...prev, items: updatedItems }));
-      saveSharedItems(updatedItems);
-    }
-  };
-
-  const updateItem = (id: string, field: keyof InvoiceItem, value: any) => {
-    const updatedItems = formData.items.map(item =>
-      item.id === id ? { ...item, [field]: value } : item
-    );
-    setFormData(prev => ({ ...prev, items: updatedItems }));
-    saveSharedItems(updatedItems);
-  };
-
-  const handleSubmit = async () => {
-    if (!formData.businessName || !formData.clientName) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in at least the business name and client name before exporting.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoadingPDF(true);
-    try {
-      const invoiceData = {
-        ...formData,
-        colorScheme,
-        id: formData.id || `INV-${Date.now()}`,
-        invoiceNumber: formData.invoiceNumber || `INV-${Date.now()}`,
-      };
-
-      await onExportPDF(invoiceData);
-    } catch (error) {
-      console.error('Error exporting PDF:', error);
-      toast({
-        title: "Export Failed",
-        description: "Failed to export PDF. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingPDF(false);
-    }
-  };
-
-  if (loading) {
-    return <div className="flex items-center justify-center h-64">Loading...</div>;
-  }
-
   return (
-    <div className="space-y-6">
-      <BusinessInfoSection
-        isOpen={openSection === 'business'}
-        onToggle={() => toggleSection('business')}
-        formData={formData}
-        onFieldChange={handleBusinessFieldChange}
-        onLogoUpload={handleLogoUpload}
-      />
+    <InvoiceFormProvider
+      onExportPDF={onExportPDF}
+      onDataChange={onDataChange}
+      colorScheme={colorScheme}
+      documentType="invoice"
+      historyData={historyData}
+    >
+      {({
+        invoiceData,
+        clientEmail,
+        loading,
+        isSending,
+        handleBusinessInfoChange,
+        handleClientInfoChange,
+        handleDocumentDetailsChange,
+        handleCurrencyChange,
+        addItem,
+        removeItem,
+        updateItem,
+        handleNotesChange,
+        handleTermsChange,
+        handleExportPDF,
+        handleSendEmail,
+        setClientEmail,
+      }) => {
+        if (loading) {
+          return (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          );
+        }
 
-      <ClientInfoSection
-        isOpen={openSection === 'client'}
-        onToggle={() => toggleSection('client')}
-        formData={formData}
-        onFieldChange={handleClientFieldChange}
-      />
+        return (
+          <div className="space-y-6">
+            {historyData && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                      Editing: {historyData.type?.toUpperCase()} #{historyData.invoiceNumber}
+                    </h3>
+                    <p className="text-xs text-blue-600 dark:text-blue-300">
+                      Make changes below to update this document
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onNewDocument}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    New Invoice
+                  </Button>
+                </div>
+              </div>
+            )}
 
-      <DocumentDetailsSection
-        isOpen={openSection === 'details'}
-        onToggle={() => toggleSection('details')}
-        formData={formData}
-        onFieldChange={handleDraftFieldChange}
-        onCurrencyChange={handleCurrencyChange}
-      />
+            <TabsCustom defaultValue="customization">
+              <TabsListCustom twoRows={true}>
+                <TabsTriggerCustom value="customization">Customization</TabsTriggerCustom>
+                <TabsTriggerCustom value="business">Business Info</TabsTriggerCustom>
+                <TabsTriggerCustom value="client">Client Info</TabsTriggerCustom>
+                <TabsTriggerCustom value="document">Invoice Details</TabsTriggerCustom>
+                <TabsTriggerCustom value="items">Items</TabsTriggerCustom>
+                <TabsTriggerCustom value="notes">Notes</TabsTriggerCustom>
+                <TabsTriggerCustom value="terms">Terms</TabsTriggerCustom>
+                <TabsTriggerCustom value="actions">Send & Export</TabsTriggerCustom>
+              </TabsListCustom>
 
-      <ItemsSection
-        isOpen={openSection === 'items'}
-        onToggle={() => toggleSection('items')}
-        items={formData.items}
-        onAddItem={addItem}
-        onRemoveItem={removeItem}
-        onUpdateItem={updateItem}
-      />
+              <TabsContentCustom value="customization">
+                <DocumentCustomization
+                  documentType="invoice"
+                  colorScheme={colorScheme}
+                  onColorSchemeChange={onColorSchemeChange}
+                  darkMode={darkMode}
+                  onDarkModeChange={onDarkModeChange}
+                  watermarkEnabled={watermarkEnabled}
+                  onWatermarkEnabledChange={onWatermarkEnabledChange}
+                  watermarkColor={watermarkColor}
+                  onWatermarkColorChange={onWatermarkColorChange}
+                  watermarkOpacity={watermarkOpacity}
+                  onWatermarkOpacityChange={onWatermarkOpacityChange}
+                  watermarkDensity={watermarkDensity}
+                  onWatermarkDensityChange={onWatermarkDensityChange}
+                />
+              </TabsContentCustom>
 
-      <NotesSection
-        isOpen={openSection === 'notes'}
-        onToggle={() => toggleSection('notes')}
-        formData={formData}
-        onFieldChange={handleDraftFieldChange}
-      />
+              <TabsContentCustom value="business">
+                <BusinessInfoSection
+                  isOpen={true}
+                  onToggle={() => {}}
+                  formData={invoiceData}
+                  onFieldChange={handleBusinessInfoChange}
+                  onLogoUpload={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (e) => {
+                        const result = e.target?.result as string;
+                        handleBusinessInfoChange('businessLogo', result);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </TabsContentCustom>
 
-      {/* Export Button */}
-      <div className="pt-6">
-        <Button onClick={handleSubmit} disabled={loadingPDF} className="w-full h-12 text-lg">
-          {loadingPDF ? 'Generating PDF...' : 'Export PDF'}
-          <Download className="ml-2 h-5 w-5" />
-        </Button>
-      </div>
-    </div>
+              <TabsContentCustom value="client">
+                <ClientInfoSection
+                  isOpen={true}
+                  onToggle={() => {}}
+                  formData={invoiceData}
+                  onFieldChange={handleClientInfoChange}
+                />
+              </TabsContentCustom>
+
+              <TabsContentCustom value="document">
+                <DocumentDetailsSection
+                  isOpen={true}
+                  onToggle={() => {}}
+                  formData={invoiceData}
+                  onFieldChange={handleDocumentDetailsChange}
+                  onCurrencyChange={handleCurrencyChange}
+                />
+              </TabsContentCustom>
+
+              <TabsContentCustom value="items">
+                <ItemsSection
+                  isOpen={true}
+                  onToggle={() => {}}
+                  items={invoiceData.items}
+                  onAddItem={addItem}
+                  onRemoveItem={removeItem}
+                  onUpdateItem={updateItem}
+                />
+              </TabsContentCustom>
+
+              <TabsContentCustom value="notes">
+                <NotesSection
+                  notes={invoiceData.notes}
+                  onNotesChange={handleNotesChange}
+                />
+              </TabsContentCustom>
+
+              <TabsContentCustom value="terms">
+                <NotesSection
+                  title="Terms & Conditions"
+                  notes={invoiceData.terms}
+                  onNotesChange={handleTermsChange}
+                />
+              </TabsContentCustom>
+
+              <TabsContentCustom value="actions">
+                <InvoiceActions
+                  documentType="invoice"
+                  clientEmail={clientEmail}
+                  onEmailChange={setClientEmail}
+                  onSendEmail={handleSendEmail}
+                  onExportPDF={handleExportPDF}
+                  isSending={isSending}
+                />
+              </TabsContentCustom>
+            </TabsCustom>
+          </div>
+        );
+      }}
+    </InvoiceFormProvider>
   );
 };

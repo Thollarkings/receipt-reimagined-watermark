@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -13,6 +12,8 @@ interface DocumentCustomizationProps {
   onColorSchemeChange: (scheme: string) => void;
   darkMode?: boolean;
   onDarkModeChange?: (enabled: boolean) => void;
+  watermarkEnabled?: boolean;
+  onWatermarkEnabledChange?: (enabled: boolean) => void;
   watermarkColor?: string;
   onWatermarkColorChange?: (color: string) => void;
   watermarkOpacity?: number;
@@ -27,6 +28,8 @@ export const DocumentCustomization: React.FC<DocumentCustomizationProps> = ({
   onColorSchemeChange,
   darkMode = false,
   onDarkModeChange,
+  watermarkEnabled = true,
+  onWatermarkEnabledChange,
   watermarkColor = '#9ca3af',
   onWatermarkColorChange,
   watermarkOpacity = 20,
@@ -108,54 +111,64 @@ export const DocumentCustomization: React.FC<DocumentCustomizationProps> = ({
                 </div>
 
                 <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <h4 className="font-medium text-base">Watermark Settings</h4>
-                  
-                  <div>
-                    <Label className="text-sm font-medium mb-3 block">Watermark Color</Label>
-                    <div className="grid grid-cols-4 gap-3">
-                      {watermarkColors.map((color) => (
-                        <button
-                          key={color.value}
-                          className={`w-full h-12 rounded-lg border-2 transition-all transform hover:scale-105 ${
-                            watermarkColor === color.value 
-                              ? 'border-gray-900 dark:border-white scale-110 shadow-lg' 
-                              : 'border-gray-300 hover:border-gray-400'
-                          }`}
-                          style={{ backgroundColor: color.value }}
-                          onClick={() => onWatermarkColorChange?.(color.value)}
-                          title={color.name}
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-medium">Enable Watermark</Label>
+                    <Switch
+                      checked={watermarkEnabled}
+                      onCheckedChange={onWatermarkEnabledChange}
+                    />
+                  </div>
+
+                  {watermarkEnabled && (
+                    <>
+                      <div>
+                        <Label className="text-sm font-medium mb-3 block">Watermark Color</Label>
+                        <div className="grid grid-cols-4 gap-3">
+                          {watermarkColors.map((color) => (
+                            <button
+                              key={color.value}
+                              className={`w-full h-12 rounded-lg border-2 transition-all transform hover:scale-105 ${
+                                watermarkColor === color.value 
+                                  ? 'border-gray-900 dark:border-white scale-110 shadow-lg' 
+                                  : 'border-gray-300 hover:border-gray-400'
+                              }`}
+                              style={{ backgroundColor: color.value }}
+                              onClick={() => onWatermarkColorChange?.(color.value)}
+                              title={color.name}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm font-medium mb-3 block">
+                          Watermark Opacity: {watermarkOpacity}%
+                        </Label>
+                        <Slider
+                          value={[watermarkOpacity]}
+                          onValueChange={([value]) => onWatermarkOpacityChange?.(value)}
+                          min={5}
+                          max={60}
+                          step={5}
+                          className="w-full"
                         />
-                      ))}
-                    </div>
-                  </div>
+                      </div>
 
-                  <div>
-                    <Label className="text-sm font-medium mb-3 block">
-                      Watermark Opacity: {watermarkOpacity}%
-                    </Label>
-                    <Slider
-                      value={[watermarkOpacity]}
-                      onValueChange={([value]) => onWatermarkOpacityChange?.(value)}
-                      min={5}
-                      max={60}
-                      step={5}
-                      className="w-full"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-sm font-medium mb-3 block">
-                      Watermark Density: {watermarkDensity}%
-                    </Label>
-                    <Slider
-                      value={[watermarkDensity]}
-                      onValueChange={([value]) => onWatermarkDensityChange?.(value)}
-                      min={10}
-                      max={80}
-                      step={5}
-                      className="w-full"
-                    />
-                  </div>
+                      <div>
+                        <Label className="text-sm font-medium mb-3 block">
+                          Watermark Density: {watermarkDensity}%
+                        </Label>
+                        <Slider
+                          value={[watermarkDensity]}
+                          onValueChange={([value]) => onWatermarkDensityChange?.(value)}
+                          min={10}
+                          max={80}
+                          step={5}
+                          className="w-full"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               </>
             )}

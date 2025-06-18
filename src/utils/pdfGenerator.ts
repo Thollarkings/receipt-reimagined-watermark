@@ -1,145 +1,55 @@
-import html2canvas from 'html2canvas';
+
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { InvoiceData } from '@/types/invoice';
 
-export const generatePDF = async (data: InvoiceData): Promise<void> => {
+export const generatePDF = async (data: InvoiceData, download: boolean = false): Promise<string> => {
   try {
-    console.log('Starting PDF generation for:', data.type);
-
-    // Find the preview container element
-    let previewElement = document.querySelector('.invoice-preview-container') 
-                      || document.querySelector('[data-preview-container]') 
-                      || (() => {
-                        const el = document.querySelector('.transform.scale-50, .transform.scale-65, .transform.scale-75, .transform.scale-90, .transform.scale-100');
-                        return el ? el.parentElement : null;
-                      })();
-
-    if (!previewElement) {
-      throw new Error('Preview element not found. Please ensure the preview is visible.');
+    // Find the specific invoice/receipt preview container (not including history)
+    const previewContainer = document.querySelector('[data-invoice-preview]') as HTMLElement;
+    if (!previewContainer) {
+      throw new Error('Invoice preview container not found');
     }
 
-    console.log('Found preview element:', previewElement);
-
-    // Create a temporary container for PDF generation
-    const tempContainer = document.createElement('div');
-    tempContainer.style.position = 'absolute';
-    tempContainer.style.left = '-9999px';
-    tempContainer.style.top = '0';
-    tempContainer.style.width = '794px'; // A4 width in pixels at 96 DPI
-    tempContainer.style.backgroundColor = 'white';
-    tempContainer.style.transform = 'scale(1)'; // Reset any scaling
-    tempContainer.innerHTML = previewElement.innerHTML;
-
-    document.body.appendChild(tempContainer);
-
-    // Wait for styles to apply
-    await new Promise(resolve => setTimeout(resolve, 200));
-
-    console.log('Generating canvas...');
-
-    // Ensure the tempContainer height adjusts to fit the content
-    tempContainer.style.height = 'auto';
-    tempContainer.style.maxHeight = 'none';
-
-    // Wait for reflow
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    // Get the full rendered height of the content
-    const contentRect = tempContainer.getBoundingClientRect();
-    const fullHeight = Math.ceil(contentRect.height);
-
-    // Generate canvas from the temporary container with actual content height
-    const canvas = await html2canvas(tempContainer, {
-      scale: 1.5,
+    // Create canvas from the preview
+    const canvas = await html2canvas(previewContainer, {
+      scale: 2,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
-      width: 650, // Fixed width for consistent scaling
-      height: 1000, // Dynamic height based on content
-      scrollX: 0,
-      scrollY: 0,
-      logging: false
+      width: previewContainer.scrollWidth,
+      height: previewContainer.scrollHeight,
     });
 
-    console.log('Canvas generated, creating PDF...');
+    // Create PDF
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
 
-    // Remove temporary container
-    document.body.removeChild(tempContainer);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+    
+    // Limit the scale to maximum 1.4
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight, 1.4);
+    const imgX = (pdfWidth - imgWidth * ratio) / 2;
+    const imgY = 0;
 
-    // Create PDF with Legal size in mm
-    const pdf = new jsPDF('p', 'mm', 'legal');
+    pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
 
-    // Define page and content dimensions
-    const pageWidth = pdf.internal.pageSize.getWidth();   // Legal width in mm
-    const pageHeight = pdf.internal.pageSize.getHeight(); // Legal height in mm
-    const pxToMm = 25.4 / 96;                              // 1 px = 0.264583 mm at 96 DPI
-    const contentWidthMM = canvas.width * pxToMm;          // width in mm
-    const contentHeightMM = canvas.height * pxToMm;        // height in mm
-
-    // Calculate scale to fit page width (never upscale beyond 1)
-    const scale = Math.min(pageWidth / contentWidthMM, 1);
-
-    // Scaled content width and height in mm
-    const scaledWidth = contentWidthMM * scale;
-    const scaledHeight = contentHeightMM * scale;
-
-    // Horizontal offset to center content
-    const offsetX = (pageWidth - scaledWidth) / 2;
-
-    // Pixels per mm for slicing
-    const pxPerMm = 96 / 25.4;
-
-    // Height of one PDF page in pixels at the scaled size
-    const pageHeightPx = pageHeight * pxPerMm / scale;
-
-    let remainingHeightPx = canvas.height;
-    let page = 0;
-
-    while (remainingHeightPx > 0) {
-      // Height of current slice in pixels
-      const sliceHeightPx = Math.min(remainingHeightPx, pageHeightPx);
-
-      // Create canvas for this page slice
-      const pageCanvas = document.createElement('canvas');
-      pageCanvas.width = canvas.width;
-      pageCanvas.height = sliceHeightPx;
-
-      const ctx = pageCanvas.getContext('2d');
-      if (!ctx) throw new Error('Failed to get canvas context');
-
-      // Draw slice from original canvas
-      ctx.drawImage(
-        canvas,
-        0, page * pageHeightPx,  // source x, y
-        canvas.width, sliceHeightPx, // source width, height
-        0, 0,                       // destination x, y
-        canvas.width, sliceHeightPx  // destination width, height
-      );
-
-      // Convert slice to image data
-      const imgData = pageCanvas.toDataURL('image/png');
-
-      // Scaled height of this slice in mm
-      const scaledSliceHeight = sliceHeightPx * pxToMm * scale;
-
-      if (page > 0) pdf.addPage();
-
-      // Add image to PDF, horizontally centered, top aligned vertically
-      pdf.addImage(imgData, 'PNG', offsetX, 0, scaledWidth, scaledSliceHeight);
-
-      remainingHeightPx -= sliceHeightPx;
-      page++;
+    if (download) {
+      const filename = `${data.type}-${data.invoiceNumber}-${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(filename);
     }
 
-    console.log('Total pages generated:', page);
-
-    // Save the PDF with a meaningful filename
-    const filename = `${data.type}-${data.invoiceNumber || 'document'}.pdf`;
-    console.log('Saving PDF as:', filename);
-    pdf.save(filename);
-
+    // Return base64 data URL for email or storage
+    return pdf.output('datauristring');
   } catch (error) {
     console.error('PDF generation error:', error);
-    throw new Error('Failed to generate PDF. Please try again.');
+    throw new Error('Failed to generate PDF');
   }
 };
