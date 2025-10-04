@@ -9,6 +9,7 @@ interface InvoiceHistoryProps {
   onExportPDF: (data: any) => void;
   onSendEmail?: (data: any) => void;
   selectedId?: string | null;
+  onRefresh?: () => void;
 }
 
 export const InvoiceHistory: React.FC<InvoiceHistoryProps> = ({
@@ -17,12 +18,14 @@ export const InvoiceHistory: React.FC<InvoiceHistoryProps> = ({
   onSendEmail,
   selectedId,
 }) => {
-  const { history, loading, error, deleteInvoice } = useInvoiceHistory();
+  const { history, loading, error, deleteInvoice, refreshHistory } = useInvoiceHistory();
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this invoice/receipt?')) {
       await deleteInvoice(id);
+      // Refresh history after deletion
+      await refreshHistory();
     }
   };
 

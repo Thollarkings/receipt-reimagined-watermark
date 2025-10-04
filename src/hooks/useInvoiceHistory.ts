@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { InvoiceData } from "@/types/invoice";
@@ -20,38 +20,38 @@ export function useInvoiceHistory() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchHistory = React.useCallback(async () => {
     if (!user) return;
+    
+    setLoading(true);
+    setError(null);
+    const { data, error } = await supabase
+      .from("invoices")
+      .select("id, invoice_number, type, created_at, data")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
 
-    const fetchHistory = async () => {
-      setLoading(true);
-      setError(null);
-      const { data, error } = await supabase
-        .from("invoices")
-        .select("id, invoice_number, type, created_at, data")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        setError("Failed to load history");
-        setLoading(false);
-        return;
-      }
-
-      setHistory(
-        (data || []).map((row: any) => ({
-          id: row.id,
-          invoiceNumber: row.invoice_number,
-          createdAt: row.created_at,
-          type: row.type,
-          data: row.data,
-        }))
-      );
+    if (error) {
+      setError("Failed to load history");
       setLoading(false);
-    };
+      return;
+    }
 
-    fetchHistory();
+    setHistory(
+      (data || []).map((row: any) => ({
+        id: row.id,
+        invoiceNumber: row.invoice_number,
+        createdAt: row.created_at,
+        type: row.type,
+        data: row.data,
+      }))
+    );
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   const deleteInvoice = async (id: string) => {
     if (!user) return;
@@ -82,5 +82,5 @@ export function useInvoiceHistory() {
     }
   };
 
-  return { history, loading, error, deleteInvoice };
+  return { history, loading, error, deleteInvoice, refreshHistory: fetchHistory };
 }

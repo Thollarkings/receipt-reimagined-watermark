@@ -29,17 +29,14 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const [previewData, setPreviewData] = useState<InvoiceData | null>(null);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const [isEditingHistory, setIsEditingHistory] = useState(false);
+  const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   
   const { saveInvoiceData, saving } = useInvoiceStorage();
   const { toast } = useToast();
 
   const handleDataChange = (data: InvoiceData) => {
     setPreviewData(data);
-    // If user starts editing, clear history selection
-    if (isEditingHistory) {
-      setIsEditingHistory(false);
-      setSelectedHistoryId(null);
-    }
+    // Keep history selection active while editing
   };
 
   const handleHistoryLoad = (data: InvoiceData, historyId: string) => {
@@ -98,11 +95,21 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
         watermarkEnabled
       };
       
-      await saveInvoiceData(saveData);
+      // Pass selectedHistoryId to update existing record if editing
+      const savedId = await saveInvoiceData(saveData, selectedHistoryId);
+      
+      // If it was a new save, set the returned ID as the selectedHistoryId
+      if (!selectedHistoryId && savedId) {
+        setSelectedHistoryId(savedId);
+        setIsEditingHistory(true);
+      }
+      
+      // Trigger history refresh
+      setHistoryRefreshTrigger(prev => prev + 1);
       
       toast({
-        title: "Document Saved",
-        description: `${documentType === 'invoice' ? 'Invoice' : 'Receipt'} #${previewData.invoiceNumber} has been saved successfully.`,
+        title: isEditingHistory ? "Document Updated" : "Document Saved",
+        description: `${documentType === 'invoice' ? 'Invoice' : 'Receipt'} #${previewData.invoiceNumber} has been ${isEditingHistory ? 'updated' : 'saved'} successfully.`,
       });
     } catch (error) {
       toast({
@@ -253,7 +260,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
           </div>
 
           {/* History Section - Separate from preview, won't be exported */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4" key={historyRefreshTrigger}>
             <h2 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-200">
               Invoice & Receipt History
             </h2>

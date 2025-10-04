@@ -52,6 +52,15 @@ export function useInvoiceFormState({
   const [clientEmail, setClientEmail] = React.useState('');
   const [isLoadingHistory, setIsLoadingHistory] = React.useState(false);
 
+  // Get persisted currency from localStorage or default to NGN
+  const getPersistedCurrency = () => {
+    if (typeof window !== 'undefined') {
+      const savedCurrency = localStorage.getItem('invoicemax_currency');
+      return savedCurrency || 'NGN';
+    }
+    return 'NGN';
+  };
+
   const [invoiceData, setInvoiceData] = React.useState<InvoiceData>({
     id: `${documentType.toUpperCase()}-${Date.now()}`,
     type: documentType,
@@ -68,7 +77,7 @@ export function useInvoiceFormState({
     invoiceNumber: draftData?.invoiceNumber || `${documentType.toUpperCase()}-${Date.now()}`,
     invoiceDate: draftData?.invoiceDate || new Date().toISOString().split('T')[0],
     dueDate: draftData?.dueDate || '',
-    currency: draftData?.currency || 'NGN',
+    currency: draftData?.currency || getPersistedCurrency(),
     items: sharedItems || [{ id: '1', description: '', quantity: 1, unitPrice: 0, taxRate: 0, discount: 0 }],
     notes: draftData?.notes || '',
     terms: draftData?.terms || '',
@@ -161,10 +170,10 @@ export function useInvoiceFormState({
     // eslint-disable-next-line
   }, [invoiceData, onDataChange, colorScheme]);
 
-  // DEBOUNCE utility for updating draft/client/profile data
-  const debouncedSaveDraftData = useDebouncedCallback(saveDraftData, 1000);
-  const debouncedSaveClientData = useDebouncedCallback(saveClientData, 1000);
-  const debouncedUpdateProfile = useDebouncedCallback(updateProfile, 1000);
+  // DEBOUNCE utility for updating draft/client/profile data (realistic typing delay)
+  const debouncedSaveDraftData = useDebouncedCallback(saveDraftData, 600);
+  const debouncedSaveClientData = useDebouncedCallback(saveClientData, 600);
+  const debouncedUpdateProfile = useDebouncedCallback(updateProfile, 600);
 
   // -- Change Handlers --
   const handleBusinessInfoChange = React.useCallback((field: keyof InvoiceData, value: string) => {
@@ -232,6 +241,10 @@ export function useInvoiceFormState({
       ...prev,
       currency
     }));
+    // Persist currency selection in localStorage for the session
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('invoicemax_currency', currency);
+    }
     if (!historyData) {
       debouncedSaveDraftData({ currency });
     }
@@ -303,24 +316,72 @@ export function useInvoiceFormState({
   // Export/Email
   const handleExportPDF = React.useCallback(async () => {
     try {
-      const exportData = prepareInvoiceData();
-      await saveInvoiceData(exportData);
+      const exportData: InvoiceData = {
+        id: invoiceData.id,
+        type: documentType,
+        invoiceNumber: invoiceData.invoiceNumber,
+        invoiceDate: invoiceData.invoiceDate,
+        dueDate: invoiceData.dueDate || '',
+        paymentDate: invoiceData.paymentDate || '',
+        paymentMethod: invoiceData.paymentMethod || '',
+        businessName: invoiceData.businessName || '',
+        businessLogo: invoiceData.businessLogo || '',
+        businessAddress: invoiceData.businessAddress || '',
+        businessPhone: invoiceData.businessPhone || '',
+        businessEmail: invoiceData.businessEmail || '',
+        businessWebsite: invoiceData.businessWebsite || '',
+        clientName: invoiceData.clientName,
+        clientAddress: invoiceData.clientAddress,
+        clientPhone: invoiceData.clientPhone,
+        clientEmail: invoiceData.clientEmail,
+        items: invoiceData.items,
+        currency: invoiceData.currency,
+        notes: invoiceData.notes,
+        terms: invoiceData.terms,
+        amountPaid: invoiceData.amountPaid || 0,
+        colorScheme,
+      };
+      // Don't auto-save on export - user must use Save button
       await onExportPDF(exportData);
     } catch (error) {
       console.error('Export error:', error);
     }
-  }, [saveInvoiceData, onExportPDF]);
+  }, [invoiceData, colorScheme, documentType, onExportPDF]);
 
   const handleSendEmail = React.useCallback(async () => {
     try {
-      const emailData = prepareInvoiceData();
-      await saveInvoiceData(emailData);
+      const emailData: InvoiceData = {
+        id: invoiceData.id,
+        type: documentType,
+        invoiceNumber: invoiceData.invoiceNumber,
+        invoiceDate: invoiceData.invoiceDate,
+        dueDate: invoiceData.dueDate || '',
+        paymentDate: invoiceData.paymentDate || '',
+        paymentMethod: invoiceData.paymentMethod || '',
+        businessName: invoiceData.businessName || '',
+        businessLogo: invoiceData.businessLogo || '',
+        businessAddress: invoiceData.businessAddress || '',
+        businessPhone: invoiceData.businessPhone || '',
+        businessEmail: invoiceData.businessEmail || '',
+        businessWebsite: invoiceData.businessWebsite || '',
+        clientName: invoiceData.clientName,
+        clientAddress: invoiceData.clientAddress,
+        clientPhone: invoiceData.clientPhone,
+        clientEmail: invoiceData.clientEmail,
+        items: invoiceData.items,
+        currency: invoiceData.currency,
+        notes: invoiceData.notes,
+        terms: invoiceData.terms,
+        amountPaid: invoiceData.amountPaid || 0,
+        colorScheme,
+      };
+      // Don't auto-save on email send - user must use Save button
       const pdfDataUrl = await generatePDF(emailData, false);
       await sendInvoiceEmail(emailData, pdfDataUrl, clientEmail);
     } catch (error) {
       console.error('Email sending error:', error);
     }
-  }, [clientEmail, saveInvoiceData, sendInvoiceEmail, generatePDF]);
+  }, [clientEmail, sendInvoiceEmail, invoiceData, colorScheme, documentType]);
 
   // Prepare data for export/send
   const prepareInvoiceData = React.useCallback((): InvoiceData => {
