@@ -36,13 +36,20 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const { history, loading: historyLoading } = useInvoiceHistory();
   const { toast } = useToast();
 
-  // Load most recent invoice/receipt on mount
+  // Load most recent invoice/receipt on mount or when history updates
   useEffect(() => {
-    if (!historyLoading && history.length > 0 && !previewData && !selectedHistoryId) {
+    if (!historyLoading && history.length > 0 && !selectedHistoryId) {
       const mostRecent = history[0];
-      handleHistoryLoad(mostRecent.data, mostRecent.id);
+      setPreviewData(mostRecent.data);
+      setSelectedHistoryId(mostRecent.id);
+      setIsEditingHistory(true);
+      
+      // Switch document type if needed
+      if (mostRecent.data.type && mostRecent.data.type !== documentType) {
+        setDocumentType(mostRecent.data.type as 'invoice' | 'receipt');
+      }
     }
-  }, [historyLoading, history.length]);
+  }, [historyLoading, history]);
 
   const handleDataChange = (data: InvoiceData) => {
     setPreviewData(data);

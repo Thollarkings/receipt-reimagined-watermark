@@ -27,9 +27,9 @@ export function useInvoiceHistory() {
     setError(null);
     const { data, error } = await supabase
       .from("invoices")
-      .select("id, invoice_number, type, created_at, data")
+      .select("id, invoice_number, type, created_at, updated_at, data")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("updated_at", { ascending: false });
 
     if (error) {
       setError("Failed to load history");
