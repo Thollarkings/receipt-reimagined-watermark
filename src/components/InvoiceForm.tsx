@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { InvoiceData } from '@/types/invoice';
 import { DocumentTypeSelector } from '@/components/invoice/DocumentTypeSelector';
 import { InvoiceFormComponent } from '@/components/invoice/InvoiceFormComponent';
@@ -10,6 +10,7 @@ import { InvoiceHistory } from '@/components/invoice/InvoiceHistory';
 import { Button } from '@/components/ui/button';
 import { Plus, Save } from 'lucide-react';
 import { useInvoiceStorage } from '@/hooks/useInvoiceStorage';
+import { useInvoiceHistory } from '@/hooks/useInvoiceHistory';
 import { useToast } from '@/hooks/use-toast';
 
 interface InvoiceFormProps {
@@ -32,7 +33,16 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   
   const { saveInvoiceData, saving } = useInvoiceStorage();
+  const { history, loading: historyLoading } = useInvoiceHistory();
   const { toast } = useToast();
+
+  // Load most recent invoice/receipt on mount
+  useEffect(() => {
+    if (!historyLoading && history.length > 0 && !previewData && !selectedHistoryId) {
+      const mostRecent = history[0];
+      handleHistoryLoad(mostRecent.data, mostRecent.id);
+    }
+  }, [historyLoading, history.length]);
 
   const handleDataChange = (data: InvoiceData) => {
     setPreviewData(data);
@@ -253,7 +263,11 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             ) : (
               <div className="h-48 sm:h-64 md:h-80 lg:h-96 bg-gray-100 dark:bg-gray-700 rounded-lg flex flex-col items-center justify-center m-4">
                 <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm md:text-base lg:text-lg text-center px-4">
-                  Fill out the form to see preview
+                  {historyLoading 
+                    ? "Loading..." 
+                    : history.length === 0 
+                      ? "Please generate an invoice/receipt to get started." 
+                      : "Fill out the form to see preview"}
                 </p>
               </div>
             )}
