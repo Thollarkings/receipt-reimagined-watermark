@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { InvoiceData } from "@/types/invoice";
@@ -20,7 +20,7 @@ export function useInvoiceHistory() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchHistory = React.useCallback(async () => {
+  const fetchHistory = useCallback(async () => {
     if (!user) return;
     
     setLoading(true);

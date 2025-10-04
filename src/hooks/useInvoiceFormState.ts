@@ -383,35 +383,6 @@ export function useInvoiceFormState({
     }
   }, [clientEmail, sendInvoiceEmail, invoiceData, colorScheme, documentType]);
 
-  // Prepare data for export/send
-  const prepareInvoiceData = React.useCallback((): InvoiceData => {
-    return {
-      id: invoiceData.id,
-      type: documentType,
-      invoiceNumber: invoiceData.invoiceNumber,
-      invoiceDate: invoiceData.invoiceDate,
-      dueDate: invoiceData.dueDate || '',
-      paymentDate: invoiceData.paymentDate || '',
-      paymentMethod: invoiceData.paymentMethod || '',
-      businessName: invoiceData.businessName || '',
-      businessLogo: invoiceData.businessLogo || '',
-      businessAddress: invoiceData.businessAddress || '',
-      businessPhone: invoiceData.businessPhone || '',
-      businessEmail: invoiceData.businessEmail || '',
-      businessWebsite: invoiceData.businessWebsite || '',
-      clientName: invoiceData.clientName,
-      clientAddress: invoiceData.clientAddress,
-      clientPhone: invoiceData.clientPhone,
-      clientEmail: invoiceData.clientEmail,
-      items: invoiceData.items,
-      currency: invoiceData.currency,
-      notes: invoiceData.notes,
-      terms: invoiceData.terms,
-      amountPaid: invoiceData.amountPaid || 0,
-      colorScheme,
-    };
-  }, [invoiceData, colorScheme, documentType]);
-
   return {
     invoiceData,
     clientEmail,
