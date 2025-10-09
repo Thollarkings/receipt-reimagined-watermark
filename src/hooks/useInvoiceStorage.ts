@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { InvoiceData } from '@/types/invoice';
 import { useToast } from '@/hooks/use-toast';
+import { invoiceDataSchema } from '@/lib/validation';
 
 export const useInvoiceStorage = () => {
   const { user } = useAuth();
@@ -12,7 +13,23 @@ export const useInvoiceStorage = () => {
 
   const saveInvoiceData = async (data: InvoiceData, existingId?: string | null): Promise<string | null> => {
     if (!user) {
-      console.error('User not authenticated');
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to save your invoice/receipt",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    // Validate data before saving
+    const validationResult = invoiceDataSchema.safeParse(data);
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
+      toast({
+        title: "Validation Error",
+        description: `${firstError.path.join('.')}: ${firstError.message}`,
+        variant: "destructive",
+      });
       return null;
     }
 
@@ -36,8 +53,6 @@ export const useInvoiceStorage = () => {
 
         if (error) throw error;
 
-        console.log('Invoice/Receipt updated successfully:', updatedInvoice.id);
-
         toast({
           title: "Data Updated",
           description: `${data.type === 'invoice' ? 'Invoice' : 'Receipt'} #${data.invoiceNumber} has been updated`,
@@ -59,18 +74,14 @@ export const useInvoiceStorage = () => {
 
         if (error) throw error;
 
-        console.log('Invoice/Receipt saved successfully:', savedInvoice.id);
-
         toast({
           title: "Data Saved",
           description: `${data.type === 'invoice' ? 'Invoice' : 'Receipt'} #${data.invoiceNumber} has been saved to your account`,
         });
 
-        return savedInvoice.id;
+      return savedInvoice.id;
       }
     } catch (error) {
-      console.error('Error saving invoice/receipt:', error);
-
       toast({
         title: "Save Failed",
         description: "Failed to save invoice/receipt data. Please try again.",

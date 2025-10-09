@@ -2,11 +2,22 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
 import { Resend } from "npm:resend@2.0.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Validation schema
+const sendInvoiceEmailSchema = z.object({
+  pdfDataUrl: z.string().min(1, "PDF data is required").max(15 * 1024 * 1024, "PDF data too large"),
+  clientEmail: z.string().trim().email("Invalid email format").max(255, "Email must be less than 255 characters"),
+  clientName: z.string().trim().max(200, "Client name must be less than 200 characters"),
+  businessName: z.string().trim().min(1, "Business name is required").max(200, "Business name must be less than 200 characters"),
+  invoiceNumber: z.string().trim().min(1, "Invoice number is required").max(100, "Invoice number must be less than 100 characters"),
+  documentType: z.enum(['invoice', 'receipt']),
+});
 
 interface SendInvoiceEmailRequest {
   pdfDataUrl: string;
@@ -45,8 +56,34 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log('RESEND_API_KEY found, initializing Resend...');
     const resend = new Resend(resendApiKey);
+
+    const body = await req.json();
+    
+    // Validate input data using zod schema
+    const validationResult = sendInvoiceEmailSchema.safeParse(body);
+    
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(e => ({
+        field: e.path.join('.'),
+        message: e.message
+      }));
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'Invalid input data',
+          details: errors
+        }),
+        {
+          status: 400,
+          headers: { 
+            "Content-Type": "application/json", 
+            ...corsHeaders 
+          },
+        }
+      );
+    }
 
     const { 
       pdfDataUrl, 
@@ -55,33 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
       businessName, 
       invoiceNumber, 
       documentType 
-    }: SendInvoiceEmailRequest = await req.json();
-
-    console.log('Request data received:', {
-      clientEmail,
-      businessName,
-      invoiceNumber,
-      documentType,
-      pdfDataSize: pdfDataUrl ? pdfDataUrl.length : 0
-    });
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(clientEmail)) {
-      throw new Error('Invalid email address format');
-    }
-
-    // Validate required fields
-    if (!pdfDataUrl || !clientEmail || !businessName || !invoiceNumber) {
-      throw new Error('Missing required fields');
-    }
-
-    // Check PDF size limit (10MB max for email attachments)
-    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-    if (pdfDataUrl.length > maxSize) {
-      console.error(`PDF too large: ${pdfDataUrl.length} bytes (max: ${maxSize})`);
-      throw new Error('PDF file is too large for email attachment. Please reduce the file size.');
-    }
+    } = validationResult.data;
 
     // Convert data URL to buffer for attachment with optimized processing
     let base64Data: string;

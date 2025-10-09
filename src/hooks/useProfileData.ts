@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { profileDataSchema } from '@/lib/validation';
 
 interface ProfileData {
   business_name?: string;
@@ -49,7 +50,6 @@ export const useProfileData = () => {
         await createProfile();
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
       toast({
         title: "Error",
         description: "Failed to load profile data",
@@ -78,12 +78,30 @@ export const useProfileData = () => {
       
       setProfileData(data);
     } catch (error) {
-      console.error('Error creating profile:', error);
+      // Silent fail on profile creation
     }
   };
 
   const updateProfile = async (updates: Partial<ProfileData>) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to update your profile",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate profile data
+    const validationResult = profileDataSchema.safeParse(updates);
+    if (!validationResult.success) {
+      toast({
+        title: "Validation Error",
+        description: "Invalid profile data. Please check your inputs.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       const { data, error } = await supabase
@@ -98,7 +116,6 @@ export const useProfileData = () => {
       setProfileData(data);
       return data;
     } catch (error) {
-      console.error('Error updating profile:', error);
       toast({
         title: "Error",
         description: "Failed to save profile data",

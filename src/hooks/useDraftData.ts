@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { InvoiceData, InvoiceItem } from '@/types/invoice';
 import { useToast } from '@/hooks/use-toast';
+import { clientDataSchema, draftDataSchema } from '@/lib/validation';
 
 interface DraftData {
   id?: string;
@@ -195,6 +196,17 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
   const saveDraftData = async (data: Partial<DraftData>) => {
     if (!user || !draftData) return;
 
+    // Validate draft data
+    const validationResult = draftDataSchema.safeParse(data);
+    if (!validationResult.success) {
+      toast({
+        title: "Validation Error",
+        description: "Invalid draft data. Please check your inputs.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const updatedData = { ...draftData, ...data };
       setDraftData(updatedData);
@@ -240,6 +252,17 @@ export const useDraftData = (documentType: 'invoice' | 'receipt') => {
 
   const saveSharedClientData = async (data: Partial<ClientData>) => {
     if (!user || !clientData) return;
+
+    // Validate client data
+    const validationResult = clientDataSchema.safeParse(data);
+    if (!validationResult.success) {
+      toast({
+        title: "Validation Error", 
+        description: "Invalid client data. Please check your inputs.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
       const updatedClient = { ...clientData, ...data };
